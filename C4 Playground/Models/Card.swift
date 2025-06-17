@@ -37,12 +37,23 @@ enum CardSuit: String, CaseIterable, Codable {
     }
 }
 
+enum CardType: String, CaseIterable, Codable {
+    case number, action
+}
+
+enum ActionCardType: String, CaseIterable, Codable {
+    case skipTurn, passTurn, divide
+}
+
 // MARK: - Card Model
 struct Card: Identifiable, Equatable, Codable {
     let id: UUID
+    let cardType: CardType
+    
     let value: CardValue
     let suit: CardSuit
-    var isFaceUp: Bool
+    var actionCardType: ActionCardType? = nil
+    
     var discardOffset: CGPoint?
     var discardRotation: Double?
     var offsetScale: Double
@@ -53,16 +64,21 @@ struct Card: Identifiable, Equatable, Codable {
     }
     
     init(id: UUID = UUID(),
+         cardType: CardType,
          value: CardValue,
          suit: CardSuit,
+         actionCardType: ActionCardType? = nil,
          isFaceUp: Bool = false,
          discardOffset: CGPoint? = nil,
          discardRotation: Double? = nil,
-         offsetScale: Double = 12.0) {
+         offsetScale: Double = 12.0)
+    {
         self.id = id
+        self.cardType = cardType
         self.value = value
         self.suit = suit
-        self.isFaceUp = isFaceUp
+        self.actionCardType = actionCardType ?? nil
+        
         self.discardOffset = discardOffset
         self.discardRotation = discardRotation
         self.offsetScale = offsetScale

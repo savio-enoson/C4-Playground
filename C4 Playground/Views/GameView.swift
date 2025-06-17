@@ -27,7 +27,7 @@ struct GameView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
                 Text("TALLY \n\(game.tally)")
-                    .font(isiPad ? .title : .title3)
+                    .font(isiPad ? .title3 : .body)
                     .bold()
                     .multilineTextAlignment(.center)
                     .foregroundColor(.red)
@@ -37,7 +37,7 @@ struct GameView: View {
                             .fill(Color.white)
                             .shadow(radius: 2)
                     )
-                    .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - cardWidth * 1.5)
+                    .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - cardWidth * 1.15)
             }
             .zIndex(.infinity)
             
@@ -57,8 +57,13 @@ struct GameView: View {
                 Spacer()
 
                 if game.whoseTurn == game.localPlayerIndex {
-                    playerHand
-                        .padding()
+                    if isiPad {
+                        playerHand
+                            .padding()
+                    } else {
+                        mobilePlayerHand
+                            .padding()
+                    }
                 }
             }
         }
@@ -98,9 +103,44 @@ struct GameView: View {
         }
     }
     
+    var mobilePlayerHand: some View {
+        let cards = game.playerHands[game.localPlayerIndex!]
+        let topCards = Array(cards.prefix(2))
+        let bottomCards = Array(cards.suffix(3))
+        
+        return VStack(spacing: -80) { // Negative spacing for overlap
+            // Bottom stack (will appear on top due to z-index)
+            HStack(spacing: -20) { // Negative spacing for horizontal overlap
+                ForEach(Array(bottomCards.enumerated()), id: \.element.id) { index, card in
+                    CardView(card: card, onPlay: { game.playNumberCard(playedCard: card) }, isFaceUp: true)
+                        .frame(width: cardWidth * 0.75)
+                        .zIndex(Double(index))
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .scale.combined(with: .opacity))
+                        )
+                }
+            }
+            
+            // Top stack (will appear underneath)
+            HStack(spacing: -20) { // Negative spacing for horizontal overlap
+                ForEach(Array(topCards.enumerated()), id: \.element.id) { index, card in
+                    CardView(card: card, onPlay: { game.playNumberCard(playedCard: card) }, isFaceUp: true)
+                        .frame(width: cardWidth * 0.75)
+                        .zIndex(Double(index))
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .scale.combined(with: .opacity))
+                        )
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
     var discardPile: some View {
         return ZStack {
-            if !game.playerHands[game.localPlayerIndex!].isEmpty {
+            if game.whoseTurn == game.localPlayerIndex {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(Color.blue, lineWidth: 2)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue.opacity(0.1)))
@@ -130,6 +170,6 @@ struct GameView: View {
     }
 }
 
-#Preview {
-    GameView(game: CardGame())
-}
+//#Preview {
+//    GameView(game: CardGame())
+//}

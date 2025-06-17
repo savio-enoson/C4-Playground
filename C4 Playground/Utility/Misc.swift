@@ -25,6 +25,10 @@ extension View {
             }
         )
     }
+    
+    func eraseToAnyView() -> AnyView {
+        AnyView(self)
+    }
 }
 
 struct GlobalPositionKey: PreferenceKey {

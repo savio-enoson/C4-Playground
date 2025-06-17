@@ -14,43 +14,65 @@ struct PlayerProfile: View {
     let image: Image
     let color: Color
     
-    let profileRadius = 30.0
+    let profileRadius = 80.0
     
     var body: some View {
-        HStack(spacing: 8) {
-            // Circular profile picture
+        HStack(spacing: 0) {
             image
                 .resizable()
                 .scaledToFit()
                 .frame(width: profileRadius, height: profileRadius)
-                .padding()
-                .clipShape(Circle())
-                .shadow(radius: 5)
+                .background(.primary)
             
             VStack {
                 // Player name box
                 Text(playerName)
-                    .font(.headline)
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)  // Make it take all available width
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                    .background(.black)
+                
+                Spacer()
                 
                 // Icon bar
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
+                    Text("🛜")
                     
+                    Text("💀")
+                    
+                    Spacer()
                 }
-                .padding(.top, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.secondary)
-                        .shadow(radius: 2)
-                )
+                .padding(.leading, 12)
+
+                Spacer()
             }
+            .frame(minHeight: profileRadius, maxHeight: .infinity)
+            .background(.gray)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white)
-                .shadow(radius: 2)
-        )
+        .frame(width: 3 * profileRadius, height: profileRadius)
+    }
+}
+
+struct PlayerProfile_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            PlayerProfile(
+                playerName: "John Doe",
+                image: Image("test_sav"),
+                color: .blue
+            )
+            .previewDisplayName("Default Profile")
+            
+            PlayerProfile(
+                playerName: "Jane Smith",
+                image: Image(systemName: "person.crop.circle.fill"),
+                color: .green
+            )
+            .previewDisplayName("Alternative Profile")
+        }
+        .padding()
+        .previewLayout(.sizeThatFits)
     }
 }

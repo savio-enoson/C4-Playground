@@ -11,6 +11,7 @@ import GameKit
 
 
 struct PlayersContainer: View {
+    let isiPad: Bool = (UIDevice.current.userInterfaceIdiom == .pad);
     let players: [GKPlayer]
     let playerProfileImages: [Image]
     let playerHands: [[Card]]
@@ -32,7 +33,7 @@ struct PlayersContainer: View {
                         PlayerProfile(playerName: players[playersExcludingMe[0]].displayName,
                                       image: playerProfileImages[playersExcludingMe[0]],
                                       color: .blue)
-                            .position(x: geometry.size.width / 2, y: edgePadding)
+                            .position(x: geometry.size.width / 2, y: isiPad ? edgePadding : edgePadding * 1.25)
                     }
                 }
                 
@@ -71,7 +72,7 @@ struct PlayersContainer: View {
                         PlayerProfile(playerName: players[playersExcludingMe[0]].displayName,
                                       image: playerProfileImages[playersExcludingMe[0]],
                                       color: .blue)
-                            .position(x: geometry.size.width / 2, y: edgePadding)
+                            .position(x: geometry.size.width / 2, y: isiPad ? edgePadding : edgePadding * 1.25)
                     }
                     
                     ZStack {

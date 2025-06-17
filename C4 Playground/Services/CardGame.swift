@@ -27,6 +27,7 @@ class CardGame: NSObject, ObservableObject {
     @Published var playerHands: [[Card]] = []
     var playerProfileImages: [Image] = []
     var playerIsEliminated: [Bool] = []
+    var winner: GKPlayer?
     
 //  GK Variables
     var match: GKMatch?
@@ -39,7 +40,7 @@ class CardGame: NSObject, ObservableObject {
         deck = []
         for suit in CardSuit.allCases {
             for value in CardValue.allCases {
-                deck.append(Card(value: value, suit: suit))
+                deck.append(Card(cardType: .number, value: value, suit: suit))
             }
         }
         deck.shuffle()
@@ -59,14 +60,12 @@ class CardGame: NSObject, ObservableObject {
             playerHands.forEach { player in
                 player.forEach{ card in
                     var card = card
-                    card.isFaceUp = false
                     deck.append(card)
                 }
             }
             
             discardPile.forEach { card in
                 var card = card
-                card.isFaceUp = false
                 card.discardOffset = nil
                 card.discardRotation = nil
                 deck.append(card)
@@ -268,6 +267,10 @@ class CardGame: NSObject, ObservableObject {
     }
     
     func eliminatePlayer(playerIndex: Int) {
+        
+    }
+    
+    func checkForWinner() {
         
     }
 }
