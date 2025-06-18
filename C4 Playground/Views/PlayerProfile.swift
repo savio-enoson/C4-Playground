@@ -10,6 +10,7 @@ import SwiftUI
 
 
 struct PlayerProfile: View {
+    let isiPad: Bool = (UIDevice.current.userInterfaceIdiom == .pad);
     let playerName: String
     let image: Image
     let color: Color
@@ -17,41 +18,50 @@ struct PlayerProfile: View {
     let profileRadius = 80.0
     
     var body: some View {
-        HStack(spacing: 0) {
+        if isiPad {
+            HStack(spacing: 0) {
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: profileRadius, height: profileRadius)
+                    .background(.primary)
+                
+                VStack {
+                    // Player name box
+                    Text(playerName)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)  // Make it take all available width
+                        .padding(.vertical, 8)
+                        .padding(.leading, 12)
+                        .background(.black)
+                    
+                    Spacer()
+                    
+                    // Icon bar
+                    HStack(spacing: 12) {
+                        Text("🛜")
+                        
+                        Text("💀")
+                        
+                        Spacer()
+                    }
+                    .padding(.leading, 12)
+
+                    Spacer()
+                }
+                .frame(minHeight: profileRadius, maxHeight: .infinity)
+                .background(.gray)
+            }
+            .frame(width: 3 * profileRadius, height: profileRadius)
+        } else {
             image
                 .resizable()
                 .scaledToFit()
                 .frame(width: profileRadius, height: profileRadius)
                 .background(.primary)
-            
-            VStack {
-                // Player name box
-                Text(playerName)
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)  // Make it take all available width
-                    .padding(.vertical, 8)
-                    .padding(.leading, 12)
-                    .background(.black)
-                
-                Spacer()
-                
-                // Icon bar
-                HStack(spacing: 12) {
-                    Text("🛜")
-                    
-                    Text("💀")
-                    
-                    Spacer()
-                }
-                .padding(.leading, 12)
-
-                Spacer()
-            }
-            .frame(minHeight: profileRadius, maxHeight: .infinity)
-            .background(.gray)
+                .clipShape(Circle())
         }
-        .frame(width: 3 * profileRadius, height: profileRadius)
     }
 }
 

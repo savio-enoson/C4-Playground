@@ -12,6 +12,7 @@ import GameKit
 struct GameData: Codable {
     var playerIndex: Int?
     var playedCard: Card?
+    var indexInHand: Int?
     var targetPlayerIndex: Int?
     var numOfCards: Int?
     var listOfCards: [Card]?
@@ -23,10 +24,9 @@ extension CardGame {
     // MARK: Codable Game Data
     
     /// Creates a data representation of the local player's score for sending to other players.
-    ///
     // Playing a number card
-    func encode(playedCard: Card) -> Data? {
-        let gameData = GameData(playerIndex: self.localPlayerIndex, playedCard: playedCard)
+    func encode(playedCard: Card, indexInHand: Int) -> Data? {
+        let gameData = GameData(playerIndex: self.localPlayerIndex, playedCard: playedCard, indexInHand: indexInHand)
         return encode(gameData: gameData)
     }
     

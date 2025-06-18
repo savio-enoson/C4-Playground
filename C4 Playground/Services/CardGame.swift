@@ -27,14 +27,15 @@ class CardGame: NSObject, ObservableObject {
     @Published var playerHands: [[Card]] = []
     var playerProfileImages: [Image] = []
     var playerIsEliminated: [Bool] = []
-    var winner: GKPlayer?
+    var hasPlayed = false
+    var localPlayerWon = false
+    var playersReady = 1
     
 //  GK Variables
     var match: GKMatch?
     var host = GKPlayer()
     var localPlayer = GKLocalPlayer.local
-    var localPlayerIndex: Int?
-    var playerUUIDKey = UUID().uuidString
+    var localPlayerIndex: Int = 0
     
     func createDeck() {
         deck = []
@@ -55,26 +56,25 @@ class CardGame: NSObject, ObservableObject {
     }
     
     func resetGame() {
-        withAnimation(.easeInOut) {
-            // Return all cards to deck
-            playerHands.forEach { player in
-                player.forEach{ card in
-                    var card = card
-                    deck.append(card)
-                }
-            }
-            
-            discardPile.forEach { card in
-                var card = card
-                card.discardOffset = nil
-                card.discardRotation = nil
-                deck.append(card)
-            }
-            
-            playerHands =  [[],[],[],[]]
-            discardPile.removeAll()
-            deck.shuffle()
-        }
+        // Gameplay Variables
+        deck = []
+        isDealing = false
+        tally = 0
+        discardPile = []
+        
+        // Player-Related Gameplay Variables
+        whoseTurn = 0
+        players = []
+        playerHands = []
+        playerIsEliminated = []
+        playerProfileImages = []
+        hasPlayed = false
+        localPlayerWon = false
+        playersReady = 1
+        
+        // GK Variables
+        match?.disconnect()
+        match?.delegate = nil
     }
     
     func setDiscardPosition(for cardId: UUID, index: Int) {
@@ -159,9 +159,12 @@ class CardGame: NSObject, ObservableObject {
         return players.filter { $0.gamePlayerID != excludedPlayer.gamePlayerID }
     }
     
-    func startGame(newMatch: GKMatch, host: GKPlayer) {
+    func setupGame(newMatch: GKMatch, host: GKPlayer) {
+        resetGame()
+        
         inGame = true
         match = newMatch
+        
         match!.delegate = self
         
         let allPlayers = [GKLocalPlayer.local] + match!.players
@@ -186,37 +189,68 @@ class CardGame: NSObject, ObservableObject {
             counter += 1
         }
         
-        if host == localPlayer {
-            localPlayerIndex = 0
-            createDeck()
-            
-            for i in 0..<players.count {
-                dealCards(to: i, numOfCards: 4)
+        if localPlayer != host {
+            // Tell host player is ready
+            do {
+                let data = encode(message: "ready")
+                try match?.send(data!, to: [host], dataMode: GKMatch.SendDataMode.reliable)
+            } catch {
+                print("Error: \(error.localizedDescription).")
+            }
+        }
+    }
+    
+    func startGame() {
+        createDeck()
+        
+        for i in 0..<players.count {
+            dealCards(to: i, numOfCards: 4)
+        }
+        
+        dealCards(to: whoseTurn, numOfCards: 1)
+    }
+    
+    func playCard(playedCard: Card, indexInHand: Int, targetPlayerIndex: Int? = nil, isMyCard: Bool = true) {
+        // Prevent double inputs
+        if isMyCard {
+            if hasPlayed {
+                return
+            } else {
+                hasPlayed = true
+            }
+        }
+        
+        switch playedCard.cardType {
+        case .number:
+            switch playedCard.value {
+            case .king:
+                tally = 100
+            default:
+                tally += Int(playedCard.value.rawValue) ?? 0
             }
             
-            dealCards(to: whoseTurn, numOfCards: 1)
-        }
-    }
-    
-    func playNumberCard(playedCard: Card) {
-        if let cardIndex = playerHands[localPlayerIndex!].firstIndex(where: { $0.id == playedCard.id }) {
-            playerHands[localPlayerIndex!].remove(at: cardIndex)
-        }
-        discardPile.append(playedCard)
-        tally += Int(playedCard.value.rawValue) ?? 0
-        
-        do {
-            let data = encode(playedCard: playedCard)
-            try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
-        } catch {
-            print("Error: \(error.localizedDescription).")
+        case .action:
+            return
         }
         
-        finishTurn()
-    }
-    
-    func playActionCard(playedCard: Card, targetPlayerIndex: Int? = nil) {
+        // If local player is playing the card
+        if isMyCard {
+            playerHands[localPlayerIndex].remove(at: indexInHand)
+            
+            do {
+                let data = encode(playedCard: playedCard, indexInHand: indexInHand)
+                try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+            } catch {
+                print("Error: \(error.localizedDescription).")
+            }
+            
+            finishTurn()
+        } else {
+            whoseTurn = (whoseTurn + 1) % players.count
+            hasPlayed = false
+        }
 
+        discardPile.append(playedCard)
     }
     
     func dealCards(to: Int, numOfCards: Int) {
@@ -253,9 +287,17 @@ class CardGame: NSObject, ObservableObject {
             deck.append(contentsOf: cardsToReshuffle)
         }
         
-        if playerIsEliminated[whoseTurn] {
-            eliminatePlayer(playerIndex: whoseTurn)
+        if playerIsEliminated[whoseTurn], localPlayerIndex == whoseTurn {
+            do {
+                let data = encode(message: "eliminate")
+                try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+            } catch {
+                print("Error: \(error.localizedDescription).")
+            }
+            
+            return
         }
+        
         whoseTurn = (whoseTurn + 1) % players.count
         dealCards(to: whoseTurn, numOfCards: 1)
     }
@@ -263,11 +305,27 @@ class CardGame: NSObject, ObservableObject {
     func isPlayerBusted() {
         if tally > 100 {
             playerIsEliminated[whoseTurn] = true
+            tally = 100
         }
     }
     
     func eliminatePlayer(playerIndex: Int) {
+        players.remove(at: playerIndex)
+        playerHands.remove(at: playerIndex)
+        playerProfileImages.remove(at: playerIndex)
+        playerIsEliminated.remove(at: playerIndex)
         
+        if playerIndex < localPlayerIndex {
+            localPlayerIndex -= 1
+        }
+        
+        if whoseTurn > players.count {
+            whoseTurn -= 1
+        }
+        
+        if players.count == 1, players[0] == localPlayer {
+            localPlayerWon = true
+        }
     }
     
     func checkForWinner() {

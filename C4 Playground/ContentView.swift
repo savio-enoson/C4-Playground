@@ -30,7 +30,7 @@ struct ContentView: View {
                     )
             }
         }
-        .onAppear {
+        .task {
             if !game.inGame {
                 game.authenticatePlayer()
             }
