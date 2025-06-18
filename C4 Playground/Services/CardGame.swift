@@ -28,7 +28,9 @@ class CardGame: NSObject, ObservableObject {
     var playerIsEliminated: [Bool] = []
     var hasPlayed = false
     var localPlayerWon = false
-    var playersReady = 1
+    var playersReady = 0
+    @Published var playersReceivedDeck = 1
+    @Published var playersReceivedReshuffleCMD = 1
     
 //  GK Variables
     var match: GKMatch?
@@ -44,6 +46,7 @@ class CardGame: NSObject, ObservableObject {
             }
         }
         deck.shuffle()
+        print("there are \(deck.count) cards in the deck.")
         
         // Send shuffled deck to sync between all players
         do {
@@ -199,8 +202,6 @@ class CardGame: NSObject, ObservableObject {
     }
     
     func startGame() {
-        createDeck()
-        
         for i in 0..<players.count {
             dealCards(to: i, numOfCards: 4)
         }
@@ -231,6 +232,8 @@ class CardGame: NSObject, ObservableObject {
             return
         }
         
+        discardPile.append(playedCard)
+        
         // If local player is playing the card
         if isMyCard {
             playerHands[localPlayerIndex].remove(at: indexInHand)
@@ -242,13 +245,15 @@ class CardGame: NSObject, ObservableObject {
                 print("Error: \(error.localizedDescription).")
             }
             
-            finishTurn()
+            if deck.count == 0 {
+                reshuffleCards()
+            } else {
+                finishTurn()
+            }
         } else {
             whoseTurn = (whoseTurn + 1) % players.count
             hasPlayed = false
         }
-
-        discardPile.append(playedCard)
     }
     
     func dealCards(to: Int, numOfCards: Int) {
@@ -266,24 +271,25 @@ class CardGame: NSObject, ObservableObject {
         }
     }
     
+    func reshuffleCards() {
+        let reshuffleCount = discardPile.count - 1
+        var cardsToReshuffle = Array(discardPile.prefix(reshuffleCount))
+        discardPile.removeFirst(reshuffleCount)
+        cardsToReshuffle.shuffle()
+        
+        // Send reshuffled deck
+        do {
+            let data = encode(message: "reshuffle", listOfCards: cardsToReshuffle)
+            try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+        } catch {
+            print("Error: \(error.localizedDescription).")
+        }
+        
+        deck.append(contentsOf: cardsToReshuffle)
+    }
+    
     func finishTurn() {
         isPlayerBusted()
-        
-        if discardPile.count >= reshuffleCount * 2 {
-            var cardsToReshuffle = Array(discardPile.prefix(reshuffleCount))
-            discardPile.removeFirst(reshuffleCount)
-            cardsToReshuffle.shuffle()
-            
-            // Send reshuffled deck
-            do {
-                let data = encode(message: "reshuffle", listOfCards: cardsToReshuffle)
-                try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
-            } catch {
-                print("Error: \(error.localizedDescription).")
-            }
-            
-            deck.append(contentsOf: cardsToReshuffle)
-        }
         
         if playerIsEliminated[whoseTurn], localPlayerIndex == whoseTurn {
             do {
@@ -299,6 +305,7 @@ class CardGame: NSObject, ObservableObject {
         whoseTurn = (whoseTurn + 1) % players.count
         dealCards(to: whoseTurn, numOfCards: 1)
     }
+    
     
     func isPlayerBusted() {
         if tally > 100 {

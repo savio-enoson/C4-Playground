@@ -8,8 +8,6 @@
 import Foundation
 import SwiftUI
 
-let reshuffleCount = 20
-
 extension View {
     func getGlobalYPosition(completion: @escaping (CGFloat) -> Void) -> some View {
         self.background(

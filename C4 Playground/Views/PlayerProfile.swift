@@ -58,7 +58,7 @@ struct PlayerProfile: View {
             image
                 .resizable()
                 .scaledToFit()
-                .frame(width: profileRadius, height: profileRadius)
+                .frame(width: profileRadius-30, height: profileRadius-30)
                 .background(.primary)
                 .clipShape(Circle())
         }

@@ -30,7 +30,7 @@ extension CardGame: GKMatchmakerViewControllerDelegate {
                     }
                     
                     let finalHost = selectedPlayer ?? allPlayers.min(by: { $0.displayName < $1.displayName }) ?? GKLocalPlayer.local
-//                    print("Starting game with host: \(finalHost.displayName)")
+                    print("Starting game with host: \(finalHost.displayName)")
                     
                     self.host = finalHost
                     self.setupGame(newMatch: match, host: finalHost)

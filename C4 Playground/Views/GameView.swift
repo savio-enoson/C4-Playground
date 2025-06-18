@@ -50,8 +50,7 @@ struct GameView: View {
                     
                     HStack {
                         cardDeck
-                            .padding(.leading, 100)
-                            .padding(.bottom, 20)
+                            .padding(.leading, 60)
                         Spacer()
                     }
                     
@@ -70,6 +69,17 @@ struct GameView: View {
                     }
                 }
             }
+            .onChange(of: game.playersReceivedDeck, {
+                if game.playersReceivedDeck == game.players.count {
+                    game.startGame()
+                }
+            })
+            .onChange(of: game.playersReceivedReshuffleCMD, {
+                if game.playersReceivedReshuffleCMD == game.players.count {
+                    game.finishTurn()
+                    game.playersReceivedReshuffleCMD = 1
+                }
+            })
             .background(
                 Image("background")
                     .resizable()

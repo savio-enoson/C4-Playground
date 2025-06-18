@@ -55,7 +55,7 @@ struct PlayersContainer: View {
                                           color: .green)
                         }
                     }
-                    .padding(.top, geometry.size.height * 0.1)
+                    .position(x: geometry.size.width/2, y: geometry.size.height/3)
                 case 3:
                     ZStack {
                         otherPlayerHand(playerCards: playerHands[playersExcludingMe[0]], cardRotation: 0.0)
@@ -85,7 +85,7 @@ struct PlayersContainer: View {
                                               color: .green)
                             }
                         }
-                        .padding(.top, geometry.size.height * 0.1)
+                        .position(x: geometry.size.width/2, y: geometry.size.height/3)
                     }
                 default:
                     ZStack {
