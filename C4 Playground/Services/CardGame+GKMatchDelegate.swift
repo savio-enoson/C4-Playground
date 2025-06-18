@@ -34,6 +34,8 @@ extension CardGame: GKMatchDelegate {
     
     /// Handles receiving a message from another player.
     /// - Tag:didReceiveData
+    
+    //  TODO: Several things of note here. First look at the case "ready" block.
     func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
 //        print("local player \(localPlayer.displayName) receiving data:")
         // Decode the data representation of the game data.
@@ -96,6 +98,8 @@ extension CardGame: GKMatchDelegate {
             case "eliminate":
                 guard let playerIndex = gameData?.playerIndex else { return }
                 eliminatePlayer(playerIndex: playerIndex)
+            //  Only host will receive this. When a player sends the message, increment playersReady by 1. When the counter reaches the number of expected pings, the match can begin.
+            //  TODO: Double click the createDeck function and jump to definition.
             case "ready":
                 if localPlayer == host {
                     print("received ready message from \(player.displayName)")
@@ -105,6 +109,8 @@ extension CardGame: GKMatchDelegate {
                         createDeck()
                     }
                 }
+            //  Same as before, but this time the controller is in GameView
+            //  TODO: Go to GameView and look for the first onChangeOf 
             case "receivedDeck":
                 if localPlayer == host {
                     print("player \(player.displayName) has received the deck")

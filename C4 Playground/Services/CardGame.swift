@@ -15,6 +15,7 @@ class CardGame: NSObject, ObservableObject {
     @Published var deck: [Card] = []
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
+    private let maxTally = 21
     
 //  TBD: Timer Logic
     @Published var isTimeKeeper = false
@@ -38,13 +39,30 @@ class CardGame: NSObject, ObservableObject {
     var localPlayer = GKLocalPlayer.local
     var localPlayerIndex: Int = 0
     
+    //  Host will always call this function. This creates a deck, and sends it to all other players. Again, the match will not start properly until all players have received the deck. Check the receiveData's "receivedDeck" case for details.
+    //  TODO: Check CardGame+GKMatchDelegate's "receivedDeck" case
     func createDeck() {
+        //  TODO: Change balance of addition and subtraction.
         deck = []
-        for suit in CardSuit.allCases {
-            for value in CardValue.allCases {
-                deck.append(Card(cardType: .number, value: value, suit: suit))
+        let subtractCards: [Card] = CardValue.allCases
+            .filter { $0.rawValue.starts(with: "-") }
+            .flatMap { value in
+                Array(repeating: Card(cardType: .number, value: value), count: 6)
             }
-        }
+        deck.append(contentsOf: subtractCards)
+        
+        let addCards: [Card] = CardValue.allCases
+            .filter { !$0.rawValue.starts(with: "-") }
+            .flatMap { value in
+                Array(repeating: Card(cardType: .number, value: value), count: 10)
+            }
+        deck.append(contentsOf: addCards)
+        
+//        for suit in CardSuit.allCases {
+//            for value in CardValue.allCases {
+//                deck.append(Card(cardType: .number, value: value, suit: suit))
+//            }
+//        }
         deck.shuffle()
         print("there are \(deck.count) cards in the deck.")
         
@@ -71,7 +89,9 @@ class CardGame: NSObject, ObservableObject {
         playerProfileImages = []
         hasPlayed = false
         localPlayerWon = false
-        playersReady = 1
+        playersReady = 0
+        playersReceivedDeck = 1
+        playersReceivedReshuffleCMD = 1
         
         // GK Variables
         match?.disconnect()
@@ -89,6 +109,8 @@ class CardGame: NSObject, ObservableObject {
         return windowScene?.windows.first?.rootViewController
     }
     
+    //  When starting matchmaking, you create a MatchRequest, and set the viewController to the GKMatchMaker view controller. This brings up the different matchmaking options (invite, automatch, etc). Logic ends here until you find a valid match.
+    //  TODO: Open up Services/CardGame+GKMatchmakerViewControllerDelegate and look at the function with didFind match
     func authenticatePlayer() {
         // Set the authentication handler that GameKit invokes.
         GKLocalPlayer.local.authenticateHandler = { viewController, error in
@@ -160,6 +182,9 @@ class CardGame: NSObject, ObservableObject {
         return players.filter { $0.gamePlayerID != excludedPlayer.gamePlayerID }
     }
     
+    
+    //  Sets up base variables for the game. resetGame is called here to reset variables before another game begins (garbage collection). Then, load data for each player. The game does not start until all players have completed this process. When done, they will send a data packet to the host to indicate that their game room is setup.
+    //  TODO: Go to CardGame+GKMatchDelegate and look at the receiveData function.
     func setupGame(newMatch: GKMatch, host: GKPlayer) {
         resetGame()
         
@@ -201,6 +226,8 @@ class CardGame: NSObject, ObservableObject {
         }
     }
     
+    //  Host deals 4 cards to each player, and then deals 1 to itself to start the game.
+    //  TODO: Double click the dealCards function and jump to definition.
     func startGame() {
         for i in 0..<players.count {
             dealCards(to: i, numOfCards: 4)
@@ -209,6 +236,10 @@ class CardGame: NSObject, ObservableObject {
         dealCards(to: whoseTurn, numOfCards: 1)
     }
     
+    //  When the local player selects a card, it will play it (do some calculations) on the local device first, and then tell everyone to to the same.
+    //  After playing, check if the deck is empty (all cards have been played). If true, then take all but one card from the discard pile, shuffle, then put it in the deck variable. Send it to all other players with the same "waiting" logic as before, to make sure everyone has received the newly shuffled deck before proceeding. This is linked to the second onChangeOf event in GameView.
+    //  This same function (well actually its the finishTurn function) then increments the turn to the next player's index. When other players receive the ping, the listener tells them to run this function (so as to not repeat the logic), but skip some logic and just increment the turn to the next player's.
+    //  TODO: Go to finishTurn and reshuffleDeck functions.
     func playCard(playedCard: Card, indexInHand: Int, targetPlayerIndex: Int? = nil, isMyCard: Bool = true) {
         // Prevent double inputs
         if isMyCard {
@@ -219,11 +250,10 @@ class CardGame: NSObject, ObservableObject {
             }
         }
         
+        // TODO: Implement action card logic (might involve adding some more environment variables and maybe a new separate controller / delegate just for actions.
         switch playedCard.cardType {
         case .number:
             switch playedCard.value {
-            case .king:
-                tally = 100
             default:
                 tally += Int(playedCard.value.rawValue) ?? 0
             }
@@ -255,7 +285,10 @@ class CardGame: NSObject, ObservableObject {
             hasPlayed = false
         }
     }
-    
+   
+    //  All gameplay logic functions roughly goes like this. Do the action on the local player's view, and then ping (send a data packet) indicating what action to perform to all other players. Set up the listener to do the same logic (in some cases call the same function with exceptions). In this instance, we deal the cards and then tell everyone else to do the same.
+    //  When this process is complete, the host (index 0) will see their cards (start their turn). When they play a card, it will trigger the playCard function.
+    //  TODO: Find the playCard function in this file
     func dealCards(to: Int, numOfCards: Int) {
         for _ in 0..<numOfCards {
             let card = deck.removeFirst()
@@ -288,10 +321,17 @@ class CardGame: NSObject, ObservableObject {
         deck.append(contentsOf: cardsToReshuffle)
     }
     
+    //  Every time a player finishes playing a card, game checks if tally has gone over the limit. If true, send the death flag to all other players. If not, then pass the turn to the next player.
     func finishTurn() {
-        isPlayerBusted()
+        if tally > maxTally {
+            playerIsEliminated[whoseTurn] = true
+        }
         
+        // If busted, tell everyone
         if playerIsEliminated[whoseTurn], localPlayerIndex == whoseTurn {
+            whoseTurn = (whoseTurn + 1) % players.count
+            dealCards(to: whoseTurn, numOfCards: 1)
+            
             do {
                 let data = encode(message: "eliminate")
                 try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
@@ -306,15 +346,15 @@ class CardGame: NSObject, ObservableObject {
         dealCards(to: whoseTurn, numOfCards: 1)
     }
     
-    
-    func isPlayerBusted() {
-        if tally > 100 {
-            playerIsEliminated[whoseTurn] = true
-            tally = 100
-        }
-    }
-    
+    // TODO: Seems to be slightly bugged, does not immediately show the you win! alert when localPlayerWon is set to true. or maybe it isn't being set, idk
     func eliminatePlayer(playerIndex: Int) {
+        // If last person standing, end game
+        if players.count == 2, playerIndex != localPlayerIndex {
+            localPlayerWon = true
+            return
+        }
+        
+        tally = maxTally
         players.remove(at: playerIndex)
         playerHands.remove(at: playerIndex)
         playerProfileImages.remove(at: playerIndex)
@@ -324,12 +364,8 @@ class CardGame: NSObject, ObservableObject {
             localPlayerIndex -= 1
         }
         
-        if whoseTurn > players.count {
+        if whoseTurn >= players.count-1 {
             whoseTurn -= 1
-        }
-        
-        if players.count == 1, players[0] == localPlayer {
-            localPlayerWon = true
         }
     }
     

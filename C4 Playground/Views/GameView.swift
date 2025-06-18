@@ -21,91 +21,87 @@ struct GameView: View {
     @ObservedObject var game: CardGame
     
     var body: some View {
-        if game.inGame {
-            ZStack {
+        ZStack {
+            Color("backgroundColor")
+            
+            if game.inGame {
                 ZStack {
-                    PlayersContainer(players: game.players, playerProfileImages: game.playerProfileImages, playerHands: game.playerHands, myIndex: game.localPlayerIndex)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    
-                    Text("TALLY \n\(game.tally)")
-                        .font(isiPad ? .title3 : .body)
-                        .bold()
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white)
-                                .shadow(radius: 2)
-                        )
-                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - cardWidth * 1.15)
-                }
-                .zIndex(.infinity)
-                
-                VStack {
-                    Spacer()
-                    
-                    discardPile
-                        .padding(.top, isiPad ? 200 : 100)
-                    
-                    HStack {
-                        cardDeck
-                            .padding(.leading, 60)
-                        Spacer()
+                    ZStack {
+                        PlayersContainer(players: game.players, playerProfileImages: game.playerProfileImages, playerHands: game.playerHands, myIndex: game.localPlayerIndex)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        Text("TALLY \n\(game.tally)")
+                            .font(isiPad ? .title3 : .body)
+                            .bold()
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.red)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white)
+                                    .shadow(radius: 2)
+                            )
+                            .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - cardWidth * 1.15)
                     }
+                    .zIndex(.infinity)
                     
-                    Spacer()
-                    
-                    if game.whoseTurn == game.localPlayerIndex {
-                        if isiPad {
-                            playerHand
-                                .padding()
-                        } else {
-                            if game.playerHands[game.localPlayerIndex].count > 0 {
-                                mobilePlayerHand
+                    VStack {
+                        Spacer()
+                        
+                        discardPile
+                            .padding(.top, isiPad ? 200 : 100)
+                        
+                        HStack {
+                            cardDeck
+                                .padding(.leading, 60)
+                            Spacer()
+                        }
+                        
+                        Spacer()
+                        
+                        if game.whoseTurn == game.localPlayerIndex {
+                            if isiPad {
+                                playerHand
                                     .padding()
+                            } else {
+                                if game.playerHands[game.localPlayerIndex].count > 0 {
+                                    mobilePlayerHand
+                                        .padding()
+                                }
                             }
                         }
                     }
                 }
-            }
-            .onChange(of: game.playersReceivedDeck, {
-                if game.playersReceivedDeck == game.players.count {
-                    game.startGame()
+                //  When all players have received the deck, the game can start. This time we use the game.players variable because it is faster than checking the match variable again. However, this means we need to start from 1 because game.players includes the local player.
+                //  TODO: Double click the startGame function and jump to definition.
+                .onChange(of: game.playersReceivedDeck, {
+                    if game.playersReceivedDeck == game.players.count {
+                        game.startGame()
+                    }
+                })
+                .onChange(of: game.playersReceivedReshuffleCMD, {
+                    if game.playersReceivedReshuffleCMD == game.players.count {
+                        game.finishTurn()
+                        game.playersReceivedReshuffleCMD = 1
+                    }
+                })
+                .alert("You Busted! 😜", isPresented: $game.playerIsEliminated[game.localPlayerIndex]) {
+                    Button("I Concede 😔") {
+                        game.inGame = false
+                    }
+                } message: {
+                    Text("Uh, oh, the tally has gone over 100!")
                 }
-            })
-            .onChange(of: game.playersReceivedReshuffleCMD, {
-                if game.playersReceivedReshuffleCMD == game.players.count {
-                    game.finishTurn()
-                    game.playersReceivedReshuffleCMD = 1
+                .alert("You Won!", isPresented: $game.localPlayerWon) {
+                    Button("Hurray 🎉! ") {
+                        game.inGame = false
+                    }
+                } message: {
+                    Text("You are the last player standing, way to go!")
                 }
-            })
-            .background(
-                Image("background")
-                    .resizable()
-            )
-            .edgesIgnoringSafeArea(.all)
-            .alert("You Busted! 😜", isPresented: $game.playerIsEliminated[game.localPlayerIndex]) {
-                Button("I Concede 😔") {
-                    game.inGame = false
-//                    game.resetGame()
-                }
-            } message: {
-                Text("Uh, oh, the tally has gone over 100!")
-            }
-            .alert("You Won!", isPresented: $game.localPlayerWon) {
-                Button("Hurray 🎉! ") {
-                    game.inGame = false
-//                    game.resetGame()
-                }
-            } message: {
-                Text("You are the last player standing, way to go!")
             }
         }
-        //        .onReceive(countdownTimer) { _ in
-        //            guard game.isTimeKeeper else { return }
-        //            game.remainingTime -= 1
-        //        }
+        .edgesIgnoringSafeArea(.all)
     }
     
     var cardDeck: some View {

@@ -10,6 +10,8 @@ import GameKit
 import SwiftUI
 
 extension CardGame: GKMatchmakerViewControllerDelegate {
+    //  The only thing of note here is the didFind match function. It searches for the best player to host (usually based on bandwidth) and sets the same host for all players. You then go into the game, calling the setupGame function.
+    //  TODO: Double click the setupGame function and jump to definition.
     func matchmakerViewController(_ viewController: GKMatchmakerViewController, didFind match: GKMatch) {
         viewController.dismiss(animated: true)
         // If all players connected, start the game
