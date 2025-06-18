@@ -19,7 +19,6 @@ struct GameView: View {
     @State private var dropAreaSize: CGSize = .init(width: (UIDevice.current.userInterfaceIdiom == .pad) ? 400.0 : 300.0, height: (UIDevice.current.userInterfaceIdiom == .pad) ? 300.0 : 200.0)
     
     @ObservedObject var game: CardGame
-    @State private var dealButtonDisabled = false
     
     var body: some View {
         if game.inGame {

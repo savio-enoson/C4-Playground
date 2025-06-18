@@ -13,7 +13,6 @@ class CardGame: NSObject, ObservableObject {
 //  Gameplay Variables
     @Published var inGame: Bool = false
     @Published var deck: [Card] = []
-    @Published var isDealing = false
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
     
@@ -58,7 +57,6 @@ class CardGame: NSObject, ObservableObject {
     func resetGame() {
         // Gameplay Variables
         deck = []
-        isDealing = false
         tally = 0
         discardPile = []
         
