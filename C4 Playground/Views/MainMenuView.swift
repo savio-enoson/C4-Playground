@@ -9,6 +9,10 @@ import SwiftUI
 
 struct MainMenuView: View {
     let isiPad: Bool = (UIDevice.current.userInterfaceIdiom == .pad);
+
+    @State var positionLogged = false
+    @State var titlePosition: CGPoint = CGPoint(x: 0, y: 0)
+    
     @ObservedObject var game: CardGame
     var cardCarouselDeck: [Card] = [
         Card(cardType: .number, value: .add_1),
@@ -34,6 +38,15 @@ struct MainMenuView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(minHeight: 80, maxHeight: isiPad ? 160 : 100)
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .onChange(of: geo.frame(in: .global), initial: true) { _, newFrame in
+                                    titlePosition = CGPoint(x: newFrame.maxX, y: newFrame.maxY)
+                                    positionLogged = true
+                                }
+                        }
+                    )
                 
                 Spacer()
                 
@@ -77,9 +90,11 @@ struct MainMenuView: View {
                 Spacer()
             }
             
-            PulsingText(text: "Bust together with friends!!")
-                .position(x: UIScreen.main.bounds.midX + 240, y: 320)
-                .rotationEffect(Angle(degrees: -10.0))
+            if positionLogged {
+                PulsingText(text: "Bust together with friends!!")
+                    .position(x: titlePosition.x - 40, y: titlePosition.y + 40)
+                    .rotationEffect(Angle(degrees: -10.0))
+            }
         }
         .ignoresSafeArea(.all)
 //        .task {
@@ -90,7 +105,7 @@ struct MainMenuView: View {
 
 struct CardCarousel: View {
     let cards: [Card]
-    let cardWidth: CGFloat = min(240, UIScreen.main.bounds.width * 0.34)
+    let cardWidth: CGFloat = min(200, UIScreen.main.bounds.width * 0.34)
     let spacing: CGFloat = 60
     let scrollSpeed: CGFloat = (UIDevice.current.userInterfaceIdiom == .pad) ? 90 : 60 // pixels per second
     
@@ -124,9 +139,10 @@ struct CardCarousel: View {
 }
 
 struct PulsingText: View {
+    let isiPad: Bool = (UIDevice.current.userInterfaceIdiom == .pad);
+
     let text: String
     let baseColor: Color = Color(.orange)
-    let baseFont: Font = .cTitle
     let pulseScale: CGFloat = 1.34
     let pulseDuration: Double = 1.5
     
@@ -134,7 +150,7 @@ struct PulsingText: View {
     
     var body: some View {
         Text(text)
-            .font(baseFont)
+            .font(isiPad ? .cTitle : .cSubheadline)
             .foregroundColor(baseColor)
             .scaleEffect(isPulsing ? pulseScale : 1.0)
             .animation(

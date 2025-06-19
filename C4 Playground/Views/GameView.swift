@@ -90,7 +90,7 @@ struct GameView: View {
                         game.inGame = false
                     }
                 } message: {
-                    Text("Uh, oh, the tally has gone over 100!")
+                    Text("Uh, oh, the tally has gone over \(game.maxTally)!")
                 }
                 .alert("You Won!", isPresented: $game.localPlayerWon) {
                     Button("Hurray 🎉! ") {

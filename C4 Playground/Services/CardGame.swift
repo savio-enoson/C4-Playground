@@ -15,7 +15,7 @@ class CardGame: NSObject, ObservableObject {
     @Published var deck: [Card] = []
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
-    private let maxTally = 21
+    let maxTally = 21
     
 //  TBD: Timer Logic
     @Published var isTimeKeeper = false
