@@ -76,15 +76,16 @@ struct Card: Identifiable, Equatable, Codable {
         "card_\(value)"
     }
     
-    init(id: UUID = UUID(),
-         cardType: CardType,
-         value: CardValue,
-//         suit: CardSuit,
-         actionCardType: ActionCardType? = nil,
-         isFaceUp: Bool = false,
-         discardOffset: CGPoint? = nil,
-         discardRotation: Double? = nil,
-         offsetScale: Double = 12.0)
+    init(
+        id: UUID = UUID(),
+        cardType: CardType,
+        value: CardValue,
+    //  suit: CardSuit,
+        actionCardType: ActionCardType? = nil,
+        isFaceUp: Bool = false,
+        discardOffset: CGPoint? = nil,
+        discardRotation: Double? = nil,
+        offsetScale: Double = 12.0)
     {
         self.id = id
         self.cardType = cardType

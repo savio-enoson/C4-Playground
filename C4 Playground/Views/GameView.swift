@@ -105,7 +105,6 @@ struct GameView: View {
     }
     
     var cardDeck: some View {
-        
         let frameWidth = isiPad ? 100.0 : 60.0
         let cardOffset = -0.75
         return ZStack {

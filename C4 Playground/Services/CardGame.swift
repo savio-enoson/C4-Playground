@@ -42,36 +42,32 @@ class CardGame: NSObject, ObservableObject {
     //  Host will always call this function. This creates a deck, and sends it to all other players. Again, the match will not start properly until all players have received the deck. Check the receiveData's "receivedDeck" case for details.
     //  TODO: Check CardGame+GKMatchDelegate's "receivedDeck" case
     func createDeck() {
-        //  TODO: Change balance of addition and subtraction.
         deck = []
+        
         let subtractCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "-") }
             .flatMap { value in
-                Array(repeating: Card(cardType: .number, value: value), count: 6)
+                (0..<6).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
-        deck.append(contentsOf: subtractCards)
         
         let addCards: [Card] = CardValue.allCases
             .filter { !$0.rawValue.starts(with: "-") }
             .flatMap { value in
-                Array(repeating: Card(cardType: .number, value: value), count: 10)
+                (0..<10).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
-        deck.append(contentsOf: addCards)
         
-//        for suit in CardSuit.allCases {
-//            for value in CardValue.allCases {
-//                deck.append(Card(cardType: .number, value: value, suit: suit))
-//            }
-//        }
+        deck.append(contentsOf: subtractCards)
+        deck.append(contentsOf: addCards)
         deck.shuffle()
-        print("there are \(deck.count) cards in the deck.")
+        
+        print("Deck contains \(deck.count) cards with IDs:", deck.map { $0.id.uuidString.prefix(4) })
         
         // Send shuffled deck to sync between all players
         do {
             let data = encode(message: "init", listOfCards: deck)
-            try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+            try match?.sendData(toAllPlayers: data!, with: .reliable)
         } catch {
-            print("Error: \(error.localizedDescription).")
+            print("Error sending deck: \(error.localizedDescription)")
         }
     }
     
