@@ -198,6 +198,87 @@ struct GameView: View {
     }
 }
 
-//#Preview {
-//    GameView(game: CardGame())
-//}
+#if DEBUG
+struct GameView_Previews: PreviewProvider {
+    static var previews: some View {
+        let mockGame = MockCardGame()
+        mockGame.setupMockGame()
+        
+        return GameView(game: mockGame).task {
+            for index in 0..<Int(mockGame.players.count) {
+                mockGame.mockPreviewDealCards(to: index, numOfCards: 4)
+            }
+            // Local player is always 2 for some reason
+            mockGame.mockPreviewDealCards(to: 0, numOfCards: 1)
+        }
+    }
+}
+
+class MockCardGame: CardGame {
+    func setupMockGame() {
+        // Setup mock game state
+        inGame = true
+        deck = []
+
+        let subtractCards: [Card] = CardValue.allCases
+            .filter { $0.rawValue.starts(with: "-") }
+            .flatMap { value in
+                (0..<6).map { _ in Card(cardType: .number, value: value) } // New card each time
+            }
+        
+        let addCards: [Card] = CardValue.allCases
+            .filter { !$0.rawValue.starts(with: "-") }
+            .flatMap { value in
+                (0..<10).map { _ in Card(cardType: .number, value: value) } // New card each time
+            }
+        
+        deck.append(contentsOf: subtractCards)
+        deck.append(contentsOf: addCards)
+        deck.shuffle()
+        
+        tally = 0
+        
+        discardPile = []
+        
+        // Mock players
+        players = [
+            MockPlayer(displayName: "You"),
+            MockPlayer(displayName: "Player 1"),
+            MockPlayer(displayName: "Player 2"),
+            MockPlayer(displayName: "Player 3"),
+        ]
+        
+        // Mock player hands
+        let emptyArr: [Card] = []
+        playerHands = Array(repeating: emptyArr, count: players.count)
+        
+        // Mock profile images
+        playerProfileImages = Array(repeating: Image(systemName: "person.circle"), count: players.count)
+        
+        playerIsEliminated = Array(repeating: false, count: players.count)
+        localPlayerIndex = 0
+        whoseTurn = localPlayerIndex
+    }
+    
+    func mockPreviewDealCards(to: Int, numOfCards: Int) {
+        for _ in 0..<numOfCards {
+            let card = deck.removeFirst()
+            playerHands[to].append(card)
+        }
+    }
+}
+
+// Mock GKPlayer for preview purposes
+class MockPlayer: GKPlayer {
+    private let _displayName: String
+    
+    init(displayName: String) {
+        self._displayName = displayName
+        super.init()
+    }
+    
+    override var displayName: String {
+        return _displayName
+    }
+}
+#endif

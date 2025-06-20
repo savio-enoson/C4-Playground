@@ -18,8 +18,8 @@ class CardGame: NSObject, ObservableObject {
     let maxTally = 21
     
 //  TBD: Timer Logic
-    @Published var isTimeKeeper = false
-    @Published var remainingTime = 60
+//    @Published var isTimeKeeper = false
+//    @Published var remainingTime = 60
     
 //  Player-Related Gameplay Variables
     var players: [GKPlayer] = []
