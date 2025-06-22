@@ -15,7 +15,7 @@ class CardGame: NSObject, ObservableObject {
     @Published var deck: [Card] = []
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
-    let maxTally = 21
+    @Published var maxTally = 21
     
 //  TBD: Timer Logic
 //    @Published var isTimeKeeper = false
@@ -38,6 +38,10 @@ class CardGame: NSObject, ObservableObject {
     struct JinxStatus: Codable {
         var turnsRemaining: Int
         var effect: JinxType
+        
+        enum EffectType: Codable {
+            case banana
+        }
     }
     
     @Published var activeJinxEffects: [[JinxStatus]] = []
@@ -104,9 +108,9 @@ class CardGame: NSObject, ObservableObject {
             (0..<4).map { _ in
                 Card(
                     cardType: .action,
-                    value: .trump_invert,
+                    value: .trump_limitchange,
                     actionCardType: .trump,
-                    trumpType: .invert
+                    trumpType: .limitchange
                 )
                 
             }
@@ -142,6 +146,7 @@ class CardGame: NSObject, ObservableObject {
         // Gameplay Variables
         deck = []
         tally = 0
+        maxTally = 21
         discardPile = []
         
         // Player-Related Gameplay Variables
@@ -368,9 +373,12 @@ class CardGame: NSObject, ObservableObject {
                     print("-- Wipeout Played. Current Score changed to 0")
                 case .maxout:
                     tally = 21
-                    print("++ Maxout Played. Current Score chanegd to 21")
-                case .invert:
-                    print("== Invert")
+                    print("++ Maxout Played. Current Score changed to 21")
+                case .limitchange:
+                    let options = [-2, -1, 1, 2]
+                    let adjustment = options.randomElement() ?? 0
+                    maxTally += adjustment
+                    print("🎯 Limit Change Played. Bust limit is now \(maxTally) (adjusted by \(adjustment))")
                 }
             }
         }

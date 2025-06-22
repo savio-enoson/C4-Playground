@@ -15,11 +15,17 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_4 = "-4"
     case subtract_5 = "-5"
     
+    // Chosen player has to play 2 cards
     case jinx_banana = "jinx_banana"
     
+    // Current score changes to 0
     case trump_wipeout = "trump_wipeout"
+    
+    // Current score becomes 21 (regardless of max tally)
     case trump_maxout = "trump_maxout"
-    case trump_invert = "trump_invert"
+    
+    // Bust limit randomly changes (between -2 or -1 or +1, +2)
+    case trump_limitchange = "trump_limitchange"
 }
 
 enum CardType: String, CaseIterable, Codable {
@@ -37,7 +43,7 @@ enum JinxType: String, Codable {
 
 // Jokers that affect the tally, rules or flow of the game.
 enum TrumpType: String, Codable {
-    case wipeout, maxout, invert
+    case wipeout, maxout, limitchange
 }
 
 // MARK: - Card Model
@@ -45,7 +51,7 @@ struct Card: Identifiable, Equatable, Codable {
     let id: UUID
     let cardType: CardType
     
-    let value: CardValue
+    var value: CardValue
 //    let suit: CardSuit  // To be removed when changing later
     var actionCardType: ActionCardType? = nil   // Action card types (enum). Use switch case to trigger different effects later
     var jinxType: JinxType? = nil
