@@ -16,39 +16,11 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_5 = "-5"
     
     case jinx_banana = "jinx_banana"
-//    case two = "2"
-//    case three = "3"
-//    case four = "4"
-//    case five = "5"
-//    case six = "6"
-//    case seven = "7"
-//    case eight = "8"
-//    case nine = "9"
-//    case ten = "10"
-//    case jack = "-10"
-//    case queen = "-20"
-//    case king = "100"
-//    case ace = "1"
-//    
-//    var imageName: String {
-//        switch self {
-//        case .ace: return "ace"
-//        case .jack: return "jack"
-//        case .queen: return "queen"
-//        case .king: return "king"
-//        default: return self.rawValue
-//        }
-//    }
+    
+    case trump_wipeout = "trump_wipeout"
+    case trump_maxout = "trump_maxout"
+    case trump_invert = "trump_invert"
 }
-
-// MARK: - Card Suit Enum
-//enum CardSuit: String, CaseIterable, Codable {
-//    case diamonds, clubs, hearts, spades
-//    
-//    var imageName: String {
-//        self.rawValue
-//    }
-//}
 
 enum CardType: String, CaseIterable, Codable {
     case number, action
@@ -65,7 +37,7 @@ enum JinxType: String, Codable {
 
 // Jokers that affect the tally, rules or flow of the game.
 enum TrumpType: String, Codable {
-    case resetTally
+    case wipeout, maxout, invert
 }
 
 // MARK: - Card Model

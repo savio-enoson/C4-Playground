@@ -63,12 +63,17 @@ class CardGame: NSObject, ObservableObject {
             }
         
         let addCards: [Card] = CardValue.allCases
-            .filter { !$0.rawValue.starts(with: "-") }
+            .filter {
+                !$0.rawValue.starts(with: "-") &&
+                !$0.rawValue.starts(with: "trump_") &&
+                !$0.rawValue.starts(with: "jinx_") &&
+                Int($0.rawValue) != nil
+            }
             .flatMap { value in
                 (0..<5).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
-        let jinxCards: [Card] = (0..<30).map { _ in
+        let jinxCards: [Card] = (0..<5).map { _ in
             Card(
                 cardType: .action,
                 value: .jinx_banana,
@@ -77,12 +82,52 @@ class CardGame: NSObject, ObservableObject {
             )
         }
         
+        let trumpCards: [Card] = [
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_wipeout,
+                    actionCardType: .trump,
+                    trumpType: .wipeout
+                )
+                
+            },
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_maxout,
+                    actionCardType: .trump,
+                    trumpType: .maxout
+                )
+                
+            },
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_invert,
+                    actionCardType: .trump,
+                    trumpType: .invert
+                )
+                
+            }
+        ].flatMap { $0 }
+        
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
         deck.append(contentsOf: jinxCards)
+        deck.append(contentsOf: trumpCards)
         deck.shuffle()
         
         print("Deck contains \(deck.count) cards with IDs:", deck.map { $0.id.uuidString.prefix(4) })
+        debugTrumpCards()
+        func debugTrumpCards() {
+            let trumpCards = deck.filter { $0.actionCardType == .trump }
+            print("=== TRUMP CARDS ===")
+            for card in trumpCards {
+                print("Card: \(card.value.rawValue)")
+                print("Type: \(card.cardType), ActionType: \(card.actionCardType!), TrumpType: \(card.trumpType!)")
+            }
+        }
         
         // Send shuffled deck to sync between all players
         do {
@@ -118,7 +163,7 @@ class CardGame: NSObject, ObservableObject {
         // GK Variables
         match?.disconnect()
         match?.delegate = nil
-        // Karyna added
+        // Karyna - :(( Found a bug with the restart the game
 //        match = nil
 //        host = GKPlayer()
 //        localPlayerIndex = 0
@@ -286,6 +331,7 @@ class CardGame: NSObject, ObservableObject {
         case .number:
             switch playedCard.value {
             default:
+                print("Current Card Value: \(playedCard.value.rawValue)")
                 tally += Int(playedCard.value.rawValue) ?? 0
             }
             
@@ -313,7 +359,19 @@ class CardGame: NSObject, ObservableObject {
                 case .dog:
                     print("Dog")
                 }
-                
+            }
+            
+            if let trump = playedCard.trumpType {
+                switch trump {
+                case .wipeout:
+                    tally = 0
+                    print("-- Wipeout Played. Current Score changed to 0")
+                case .maxout:
+                    tally = 21
+                    print("++ Maxout Played. Current Score chanegd to 21")
+                case .invert:
+                    print("== Invert")
+                }
             }
         }
         
