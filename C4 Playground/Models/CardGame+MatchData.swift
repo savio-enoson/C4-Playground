@@ -48,6 +48,12 @@ extension CardGame {
         return encode(gameData: gameData)
     }
     
+    // Sending a message with targetPlayerIndex (for Jinx targeting like Banana)
+    func encode(message: String, targetPlayerIndex: Int) -> Data? {
+        let gameData = GameData(playerIndex: self.localPlayerIndex, targetPlayerIndex: targetPlayerIndex, message: message)
+        return encode(gameData: gameData)
+    }
+    
     // Modify deck or discard pile
     func encode(message: String, listOfCards: [Card]) -> Data? {
         let gameData = GameData(listOfCards: listOfCards, message: message)

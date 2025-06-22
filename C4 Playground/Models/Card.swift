@@ -15,6 +15,7 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_4 = "-4"
     case subtract_5 = "-5"
     
+    case jinx_banana = "jinx_banana"
 //    case two = "2"
 //    case three = "3"
 //    case four = "4"
@@ -54,7 +55,17 @@ enum CardType: String, CaseIterable, Codable {
 }
 
 enum ActionCardType: String, CaseIterable, Codable {
-    case skipTurn, passTurn, divide
+    case jinx, trump
+}
+
+// Status Effect Jokers that affect a player's hand or their gameplay experience.
+enum JinxType: String, Codable {
+    case dog, banana
+}
+
+// Jokers that affect the tally, rules or flow of the game.
+enum TrumpType: String, Codable {
+    case resetTally
 }
 
 // MARK: - Card Model
@@ -65,7 +76,8 @@ struct Card: Identifiable, Equatable, Codable {
     let value: CardValue
 //    let suit: CardSuit  // To be removed when changing later
     var actionCardType: ActionCardType? = nil   // Action card types (enum). Use switch case to trigger different effects later
-    
+    var jinxType: JinxType? = nil
+    var trumpType: TrumpType? = nil
     // Variables to remember the card's offset and rotation inside the discard pile
     var discardOffset: CGPoint?
     var discardRotation: Double?
@@ -82,6 +94,8 @@ struct Card: Identifiable, Equatable, Codable {
         value: CardValue,
     //  suit: CardSuit,
         actionCardType: ActionCardType? = nil,
+        jinxType: JinxType? = nil,
+        trumpType: TrumpType? = nil,
         isFaceUp: Bool = false,
         discardOffset: CGPoint? = nil,
         discardRotation: Double? = nil,
@@ -91,7 +105,9 @@ struct Card: Identifiable, Equatable, Codable {
         self.cardType = cardType
         self.value = value
 //        self.suit = suit
-        self.actionCardType = actionCardType ?? nil
+        self.actionCardType = actionCardType
+        self.jinxType = jinxType
+        self.trumpType = trumpType
         
         self.discardOffset = discardOffset
         self.discardRotation = discardRotation
