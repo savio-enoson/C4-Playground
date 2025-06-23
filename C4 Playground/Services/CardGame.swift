@@ -15,7 +15,7 @@ class CardGame: NSObject, ObservableObject {
     @Published var deck: [Card] = []
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
-    let maxTally = 21
+    @Published var maxTally = 21
     
 //  TBD: Timer Logic
 //    @Published var isTimeKeeper = false
@@ -33,6 +33,22 @@ class CardGame: NSObject, ObservableObject {
     @Published var playersReceivedDeck = 1
     @Published var playersReceivedReshuffleCMD = 1
     
+//  Action Cards Variables
+    // Jinx Cards
+    struct JinxStatus: Codable {
+        var turnsRemaining: Int
+        var effect: JinxType
+        
+        enum EffectType: Codable {
+            case banana
+        }
+    }
+    
+    @Published var activeJinxEffects: [[JinxStatus]] = []
+    
+    // Banana: force a player to play two cards
+    var cardsPlayedThisTurn = 0
+    
 //  GK Variables
     var match: GKMatch?
     var host = GKPlayer()
@@ -47,20 +63,75 @@ class CardGame: NSObject, ObservableObject {
         let subtractCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "-") }
             .flatMap { value in
-                (0..<6).map { _ in Card(cardType: .number, value: value) } // New card each time
+                (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
         let addCards: [Card] = CardValue.allCases
-            .filter { !$0.rawValue.starts(with: "-") }
-            .flatMap { value in
-                (0..<10).map { _ in Card(cardType: .number, value: value) } // New card each time
+            .filter {
+                !$0.rawValue.starts(with: "-") &&
+                !$0.rawValue.starts(with: "trump_") &&
+                !$0.rawValue.starts(with: "jinx_") &&
+                Int($0.rawValue) != nil
             }
+            .flatMap { value in
+                (0..<5).map { _ in Card(cardType: .number, value: value) } // New card each time
+            }
+        
+        let jinxCards: [Card] = (0..<5).map { _ in
+            Card(
+                cardType: .action,
+                value: .jinx_banana,
+                actionCardType: .jinx,
+                jinxType: .banana
+            )
+        }
+        
+        let trumpCards: [Card] = [
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_wipeout,
+                    actionCardType: .trump,
+                    trumpType: .wipeout
+                )
+                
+            },
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_maxout,
+                    actionCardType: .trump,
+                    trumpType: .maxout
+                )
+                
+            },
+            (0..<4).map { _ in
+                Card(
+                    cardType: .action,
+                    value: .trump_limitchange,
+                    actionCardType: .trump,
+                    trumpType: .limitchange
+                )
+                
+            }
+        ].flatMap { $0 }
         
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
+        deck.append(contentsOf: jinxCards)
+        deck.append(contentsOf: trumpCards)
         deck.shuffle()
         
         print("Deck contains \(deck.count) cards with IDs:", deck.map { $0.id.uuidString.prefix(4) })
+        debugTrumpCards()
+        func debugTrumpCards() {
+            let trumpCards = deck.filter { $0.actionCardType == .trump }
+            print("=== TRUMP CARDS ===")
+            for card in trumpCards {
+                print("Card: \(card.value.rawValue)")
+                print("Type: \(card.cardType), ActionType: \(card.actionCardType!), TrumpType: \(card.trumpType!)")
+            }
+        }
         
         // Send shuffled deck to sync between all players
         do {
@@ -75,6 +146,7 @@ class CardGame: NSObject, ObservableObject {
         // Gameplay Variables
         deck = []
         tally = 0
+        maxTally = 21
         discardPile = []
         
         // Player-Related Gameplay Variables
@@ -89,9 +161,17 @@ class CardGame: NSObject, ObservableObject {
         playersReceivedDeck = 1
         playersReceivedReshuffleCMD = 1
         
+        // Action Cards
+        activeJinxEffects = []
+        cardsPlayedThisTurn = 0
+        
         // GK Variables
         match?.disconnect()
         match?.delegate = nil
+        // Karyna - :(( Found a bug with the restart the game
+//        match = nil
+//        host = GKPlayer()
+//        localPlayerIndex = 0
     }
     
     func setDiscardPosition(for cardId: UUID, index: Int) {
@@ -211,6 +291,8 @@ class CardGame: NSObject, ObservableObject {
             counter += 1
         }
         
+        activeJinxEffects = Array(repeating: [], count: players.count)
+        
         if localPlayer != host {
             // Tell host player is ready
             do {
@@ -237,6 +319,9 @@ class CardGame: NSObject, ObservableObject {
     //  This same function (well actually its the finishTurn function) then increments the turn to the next player's index. When other players receive the ping, the listener tells them to run this function (so as to not repeat the logic), but skip some logic and just increment the turn to the next player's.
     //  TODO: Go to finishTurn and reshuffleDeck functions.
     func playCard(playedCard: Card, indexInHand: Int, targetPlayerIndex: Int? = nil, isMyCard: Bool = true) {
+        print(">>> \(localPlayer.displayName) attempting to play card")
+        print("isMyCard: \(isMyCard), hasPlayed: \(hasPlayed), whoseTurn: \(whoseTurn), localPlayerIndex: \(localPlayerIndex)")
+
         // Prevent double inputs
         if isMyCard {
             if hasPlayed {
@@ -251,11 +336,51 @@ class CardGame: NSObject, ObservableObject {
         case .number:
             switch playedCard.value {
             default:
+                print("Current Card Value: \(playedCard.value.rawValue)")
                 tally += Int(playedCard.value.rawValue) ?? 0
             }
             
         case .action:
-            return
+            if let jinx = playedCard.jinxType {
+                
+                // Getting the target player to receive effect
+                let targetIndex = targetPlayerIndex ?? ((whoseTurn + 1) % players.count)
+
+                switch jinx {
+                case .banana:
+                    activeJinxEffects[targetIndex].append(
+                        JinxStatus(turnsRemaining: 2, effect: .banana)
+                    )
+                    print("Banana played on \(players[targetIndex].displayName)")
+                    
+                    // Broadcast banana effect to all players
+                    do {
+                        let data = encode(message: "applyBanana", targetPlayerIndex: targetIndex)
+                        try match?.sendData(toAllPlayers: data!, with: .reliable)
+                    } catch {
+                        print("❌ Failed to send banana effect:", error.localizedDescription)
+                    }
+
+                case .dog:
+                    print("Dog")
+                }
+            }
+            
+            if let trump = playedCard.trumpType {
+                switch trump {
+                case .wipeout:
+                    tally = 0
+                    print("-- Wipeout Played. Current Score changed to 0")
+                case .maxout:
+                    tally = 21
+                    print("++ Maxout Played. Current Score changed to 21")
+                case .limitchange:
+                    let options = [-2, -1, 1, 2]
+                    let adjustment = options.randomElement() ?? 0
+                    maxTally += adjustment
+                    print("🎯 Limit Change Played. Bust limit is now \(maxTally) (adjusted by \(adjustment))")
+                }
+            }
         }
         
         discardPile.append(playedCard)
@@ -271,12 +396,28 @@ class CardGame: NSObject, ObservableObject {
                 print("Error: \(error.localizedDescription).")
             }
             
+            // Changed
             if deck.count == 0 {
                 reshuffleCards()
             } else {
                 finishTurn()
             }
         } else {
+            // Only advances turn if not under Banana
+            let remoteBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
+            if !remoteBananas.isEmpty {
+                if cardsPlayedThisTurn < 1 {
+                    // First card played under banana - don't advance turn
+                    cardsPlayedThisTurn += 1
+                    print("🍌 Remote: Player still under Banana, play another card")
+                    return
+                } else {
+                    // Second card played - clear banana effect
+                    cardsPlayedThisTurn = 0
+                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
+                }
+            }
+            
             whoseTurn = (whoseTurn + 1) % players.count
             hasPlayed = false
         }
@@ -319,8 +460,33 @@ class CardGame: NSObject, ObservableObject {
     
     //  Every time a player finishes playing a card, game checks if tally has gone over the limit. If true, send the death flag to all other players. If not, then pass the turn to the next player.
     func finishTurn() {
+        
+        // Bust check :P
         if tally > maxTally {
             playerIsEliminated[whoseTurn] = true
+        } else {
+            // Check if player is under Banana effect
+            let activeBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
+            if !activeBananas.isEmpty {
+                cardsPlayedThisTurn += 1
+                if cardsPlayedThisTurn < 2 {
+                    hasPlayed = false
+                    dealCards(to: whoseTurn, numOfCards: 1)
+                    print("🍌 Still under Banana: play one more card!")
+                    return // ⬅️ Turn stays with same player
+                } else {
+                    // Clear banana effect after playing 2 cards
+                    cardsPlayedThisTurn = 0
+                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
+                }
+            }
+            
+            // Reduce duration of all active Jinx effects
+            activeJinxEffects[whoseTurn] = activeJinxEffects[whoseTurn].compactMap { status in
+                var updated = status
+                updated.turnsRemaining -= 1
+                return updated.turnsRemaining > 0 ? updated : nil
+            }
         }
         
         // If busted, tell everyone

@@ -30,7 +30,7 @@ struct GameView: View {
                         PlayersContainer(players: game.players, playerProfileImages: game.playerProfileImages, playerHands: game.playerHands, myIndex: game.localPlayerIndex)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
-                        Text("TALLY \n\(game.tally)")
+                        Text("TALLY \n\(game.tally)\nLIMIT: \(game.maxTally)")
                             .font(isiPad ? .title3 : .body)
                             .bold()
                             .multilineTextAlignment(.center)

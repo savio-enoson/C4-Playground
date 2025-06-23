@@ -118,6 +118,12 @@ extension CardGame: GKMatchDelegate {
                 }
             case "receivedReshuffledDeck":
                 playersReceivedReshuffleCMD += 1
+                
+            case "applyBanana":
+                if let target = gameData?.targetPlayerIndex {
+                    activeJinxEffects[target].append(JinxStatus(turnsRemaining: 2, effect: .banana))
+                    print("🍌 Banana effect applied to \(players[target].displayName)")
+                }
             default:
                 return
             }
