@@ -29,7 +29,8 @@ struct PlayersContainer: View {
                         otherPlayerProfile(
                             playerName: game.players[playersExcludingMe[0]].displayName,
                             image: game.playerProfileImages[playersExcludingMe[0]],
-                            myTurn: game.whoseTurn == playersExcludingMe[0]
+                            myTurn: game.whoseTurn == playersExcludingMe[0],
+                            statusEffects: game.activeJinxEffects[playersExcludingMe[0]]
                         )
                         .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                     }
@@ -41,7 +42,8 @@ struct PlayersContainer: View {
                             otherPlayerProfile(
                                 playerName: game.players[playersExcludingMe[0]].displayName,
                                 image: game.playerProfileImages[playersExcludingMe[0]],
-                                myTurn: game.whoseTurn == playersExcludingMe[0]
+                                myTurn: game.whoseTurn == playersExcludingMe[0],
+                                statusEffects: game.activeJinxEffects[playersExcludingMe[0]]
                             )
                             .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
@@ -54,7 +56,8 @@ struct PlayersContainer: View {
                             otherPlayerProfile(
                                 playerName: game.players[playersExcludingMe[1]].displayName,
                                 image: game.playerProfileImages[playersExcludingMe[1]],
-                                myTurn: game.whoseTurn == playersExcludingMe[1]
+                                myTurn: game.whoseTurn == playersExcludingMe[1],
+                                statusEffects: game.activeJinxEffects[playersExcludingMe[1]]
                             )
                             .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
@@ -68,7 +71,8 @@ struct PlayersContainer: View {
                         otherPlayerProfile(
                             playerName: game.players[playersExcludingMe[0]].displayName,
                             image: game.playerProfileImages[playersExcludingMe[0]],
-                            myTurn: game.whoseTurn == playersExcludingMe[0]
+                            myTurn: game.whoseTurn == playersExcludingMe[0],
+                            statusEffects: game.activeJinxEffects[playersExcludingMe[0]]
                         )
                         .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                         
@@ -79,7 +83,8 @@ struct PlayersContainer: View {
                                 otherPlayerProfile(
                                     playerName: game.players[playersExcludingMe[1]].displayName,
                                     image: game.playerProfileImages[playersExcludingMe[1]],
-                                    myTurn: game.whoseTurn == playersExcludingMe[1]
+                                    myTurn: game.whoseTurn == playersExcludingMe[1],
+                                    statusEffects: game.activeJinxEffects[playersExcludingMe[1]]
                                 )
                                 .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }
@@ -92,7 +97,8 @@ struct PlayersContainer: View {
                                 otherPlayerProfile(
                                     playerName: game.players[playersExcludingMe[2]].displayName,
                                     image: game.playerProfileImages[playersExcludingMe[2]],
-                                    myTurn: game.whoseTurn == playersExcludingMe[2]
+                                    myTurn: game.whoseTurn == playersExcludingMe[2],
+                                    statusEffects: game.activeJinxEffects[playersExcludingMe[2]]
                                 )
                                 .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }
@@ -113,19 +119,41 @@ struct PlayersContainer: View {
         let playerName: String
         let image: Image
         let myTurn: Bool
+        let statusEffects: [StatusEffect]
         
         var body: some View {
-            image
-                .resizable()
-                .scaledToFit()
-                .frame(width: isiPad ? 100.0 : 50, height: isiPad ? 100.0 : 50)
-                .background(.black)
-                .foregroundColor(.white)
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(myTurn ? Color.orange : .clear, lineWidth: 4)
-                )
+            VStack(spacing: 8) {
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: isiPad ? 100.0 : 50, height: isiPad ? 100.0 : 50)
+                    .background(.black)
+                    .foregroundColor(.white)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(myTurn ? Color.orange : .clear, lineWidth: 4)
+                    )
+                
+                // Horizontal stack for status effect emojis
+                if !statusEffects.isEmpty {
+                    HStack {
+                        // Loop through each status effect and display its emoji
+                        ForEach(statusEffects, id: \.type) { effect in
+                            Text(emoji(for: effect.type))
+                                .font(.system(size: isiPad ? 24 : 18))
+                                .padding(8) // 1. Add some padding so the circle isn't too tight
+                                .background(
+                                    // 2. Add a Circle shape as the background
+                                    Circle()
+                                        .fill(Color.white.opacity(0.25)) // 3. Fill it with semi-transparent white
+                                )
+                                .transition(.scale)
+                        }
+                    }
+                    .animation(.bouncy, value: statusEffects)
+                }
+            }
         }
     }
     

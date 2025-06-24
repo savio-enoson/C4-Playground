@@ -64,3 +64,21 @@ struct GameEndAlertContainer<Content: View>: View {
         .zIndex(100) // Ensure it appears above everything
     }
 }
+
+/// Returns an emoji string corresponding to a given status effect type.
+func emoji(for effectType: CardValue) -> String {
+    switch effectType {
+    case .jinx_banana:
+        return "🍌"
+    case .jinx_confusion:
+        return "❓"
+    case .jinx_hallucination:
+        return "🌀"
+    case .jinx_blackout:
+        return "🕶️"
+    case .jinx_dementia:
+        return "🧠"
+    default:
+        return "" // Return an empty string for any other unhandled cases
+    }
+}

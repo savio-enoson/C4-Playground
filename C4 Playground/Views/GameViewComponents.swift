@@ -27,6 +27,9 @@ struct GameTally: View {
     private let stepDuration = 0.08 // Time between steps
     
     var body: some View {
+        let myStatusEffects = game.activeJinxEffects[game.localPlayerIndex]
+        let isBlackedOut = myStatusEffects.contains { $0.type == .jinx_blackout }
+        
         VStack(spacing: -10) {
             Text("TALLY")
                 .bold()
@@ -50,7 +53,7 @@ struct GameTally: View {
         }
         .padding(.vertical, 5)
         .background(
-            Image("tally_box")
+            Image(isBlackedOut ? "sign_black" : "tally_box")
                 .resizable()
         )
         .frame(width: 100, height: 130)
@@ -199,8 +202,7 @@ struct PlayerHandView: View {
                     // Transparent rectangle placeholder
                     Rectangle()
                         .fill(Color.clear)
-                        .aspectRatio(CGFloat(2.5 / 3.5), contentMode: .fit)
-                        .frame(maxWidth: maxCardWidth)
+                        .frame(width: maxCardWidth, height: 100)
                 } else {
                     CardView(
                         card: card,
@@ -240,8 +242,6 @@ struct PlayerHandView: View {
         let numCards = game.playerHands[game.localPlayerIndex].count
         let smallerCardSize = cardWidth * 0.5
         
-        // The following logic has been added to match the largePlayerHand view
-        
         // Update forgotten card when effect starts
         if isForgetful && forgottenCardIndex == nil {
             DispatchQueue.main.async {
@@ -268,14 +268,14 @@ struct PlayerHandView: View {
         return VStack(spacing: -40) {
             if numCards >= 4 {
                 // Bottom row (3 cards - appears visually on top)
-                HStack(spacing: -15) {
+                HStack(alignment: .bottom, spacing: 30) {
                     ForEach(0..<3, id: \.self) { index in
                         if isForgetful && index == forgottenCardIndex {
                             // Transparent rectangle for forgotten card
                             Rectangle()
                                 .fill(Color.clear)
-                                .frame(width: smallerCardSize)
                                 .aspectRatio(2.5/3.5, contentMode: .fit)
+                                .frame(width: smallerCardSize)
                         } else {
                             let currentCard = game.playerHands[game.localPlayerIndex][index]
                             CardView(
@@ -305,14 +305,14 @@ struct PlayerHandView: View {
                 }
                 
                 // Top row (remaining cards - appears underneath)
-                HStack(spacing: -15) {
+                HStack(alignment: .bottom, spacing: 30) {
                     ForEach(3..<numCards, id: \.self) { index in
                         if isForgetful && index == forgottenCardIndex {
                             // Transparent rectangle for forgotten card
                             Rectangle()
                                 .fill(Color.clear)
-                                .frame(width: smallerCardSize)
                                 .aspectRatio(2.5/3.5, contentMode: .fit)
+                                .frame(width: smallerCardSize)
                         } else {
                             let currentCard = game.playerHands[game.localPlayerIndex][index]
                             CardView(

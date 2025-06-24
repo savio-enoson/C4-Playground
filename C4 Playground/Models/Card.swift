@@ -75,7 +75,7 @@ struct Card: Identifiable, Equatable, Codable {
     }
 }
 
-struct StatusEffect {
+struct StatusEffect: Equatable {
     let type: CardValue
     let duration: Int
     var timeElapsed: Int? = 0

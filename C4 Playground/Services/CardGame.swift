@@ -51,6 +51,7 @@ class CardGame: NSObject, ObservableObject {
     var audioPlayer: AVAudioPlayer?
     var musicPlayer: AVAudioPlayer?
     var fadeTimer: Timer?
+    var bgmVolume: Float = 0.35
     
     // Haptics
     var hapticEngine: CHHapticEngine?
@@ -82,23 +83,24 @@ class CardGame: NSObject, ObservableObject {
                 (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
-        // Total 3
-        let jinxCards: [Card] = CardValue.allCases
-            .filter {
-                $0.rawValue.starts(with: "jinx")
-            }
-            .flatMap { value in
-                (0..<3).map { _ in Card(cardType: .action, value: value) } // New card each time
-            }
+        // Get all available jinx card types
+        let allJinxTypes = CardValue.allCases.filter {
+            $0.rawValue.starts(with: "jinx")
+        }
+
+        // Select 3 random jinx cards from the available types
+        let jinxCards: [Card] = Array(allJinxTypes.shuffled().prefix(3)).map { value in
+            Card(cardType: .action, value: value)
+        }
         
-        // 2 of each
+        // Create one card for each available trump card type
         let trumpCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "trump") }
-            .flatMap { value in
-                (0..<1).map { _ in Card(cardType: .action, value: value) }
+            .map { value in
+                Card(cardType: .action, value: value)
             }
         
-        
+        deck.append(contentsOf: jinxCards)
         deck.append(contentsOf: trumpCards)
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
@@ -323,17 +325,18 @@ class CardGame: NSObject, ObservableObject {
             }
 
         case .action:
+            let targetIndex = findNextPlayer()
             switch playedCard.value {
             case .jinx_banana:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_banana, duration: 1))
+                activeJinxEffects[targetIndex].append(StatusEffect(type: .jinx_banana, duration: 2))
             case .jinx_confusion:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_confusion, duration: 3))
+                activeJinxEffects[targetIndex].append(StatusEffect(type: .jinx_confusion, duration: 4))
             case .jinx_hallucination:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_hallucination, duration: 3))
+                activeJinxEffects[targetIndex].append(StatusEffect(type: .jinx_hallucination, duration: 3))
             case .jinx_blackout:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_blackout, duration: 3))
+                activeJinxEffects[targetIndex].append(StatusEffect(type: .jinx_blackout, duration: 3))
             case .jinx_dementia:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_dementia, duration: 3))
+                activeJinxEffects[targetIndex].append(StatusEffect(type: .jinx_dementia, duration: 3))
             case .trump_wipeout:
                 tally = 0
             case .trump_maxout:
@@ -377,12 +380,10 @@ class CardGame: NSObject, ObservableObject {
             // Reshuffle deck when out of cards
             if deck.count == 0 {
                 reshuffleCards()
-            } else {
-                finishTurn()
             }
-        } else {
-            finishTurn()
         }
+        
+        finishTurn()
     }
    
     //  All gameplay logic functions roughly goes like this. Do the action on the local player's view, and then ping (send a data packet) indicating what action to perform to all other players. Set up the listener to do the same logic (in some cases call the same function with exceptions). In this instance, we deal the cards and then tell everyone else to do the same.
@@ -406,6 +407,18 @@ class CardGame: NSObject, ObservableObject {
     func reshuffleCards() {
         let reshuffleCount = discardPile.count - 1
         var cardsToReshuffle = Array(discardPile.prefix(reshuffleCount))
+        
+        cardsToReshuffle.removeAll { card in
+                card.value.rawValue.starts(with: "jinx")
+            }
+        let allJinxTypes = CardValue.allCases.filter {
+                $0.rawValue.starts(with: "jinx")
+            }
+        let newJinxCards: [Card] = Array(allJinxTypes.shuffled().prefix(allJinxTypes.count)).map { value in
+                Card(cardType: .action, value: value)
+            }
+        cardsToReshuffle.append(contentsOf: newJinxCards)
+        
         discardPile.removeFirst(reshuffleCount)
         cardsToReshuffle.shuffle()
         
@@ -429,7 +442,7 @@ class CardGame: NSObject, ObservableObject {
             playerIsEliminated[whoseTurn] = true
         }
         
-        let myStatusEffects = activeJinxEffects[localPlayerIndex]
+        let myStatusEffects = activeJinxEffects[whoseTurn]
         let hasBanana = myStatusEffects.contains { $0.type == .jinx_banana }
         
         if !hasBanana {
@@ -443,29 +456,29 @@ class CardGame: NSObject, ObservableObject {
         if myTurn {
             dealCards(to: whoseTurn, numOfCards: 1)
             hasPlayed = false
-            
-            // Update Status Effects
-            updateStatusEffect()
         }
+        
+        // Update Status Effects
+        updateStatusEffect(playerIndex: whoseTurn)
     }
     
-    private func updateStatusEffect() {
+    private func updateStatusEffect(playerIndex : Int) {
         // Update Status Effects
         var effectsToRemove = [Int]() // Track indices to remove
 
         // First pass: increment time and mark expired effects
-        for index in activeJinxEffects[localPlayerIndex].indices {
-            activeJinxEffects[localPlayerIndex][index].incrementTime()
+        for index in activeJinxEffects[playerIndex].indices {
+            activeJinxEffects[playerIndex][index].incrementTime()
             
-            if activeJinxEffects[localPlayerIndex][index].timeElapsed! >=
-               activeJinxEffects[localPlayerIndex][index].duration {
+            if activeJinxEffects[playerIndex][index].timeElapsed! >=
+               activeJinxEffects[playerIndex][index].duration {
                 effectsToRemove.append(index)
             }
         }
 
         // Second pass: remove expired effects in reverse order
         for index in effectsToRemove.sorted(by: >) {
-            activeJinxEffects[localPlayerIndex].remove(at: index)
+            activeJinxEffects[playerIndex].remove(at: index)
         }
     }
     

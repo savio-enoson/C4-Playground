@@ -60,6 +60,25 @@ struct GameView: View {
                         .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 75)
                         .offset(x: 0, y: (game.whoseTurn == game.localPlayerIndex) ? -100 : 0)
                         .animation(.easeInOut, value: game.whoseTurn)
+                    
+                    if !game.activeJinxEffects[game.localPlayerIndex].isEmpty {
+                        HStack {
+                            // Loop through each status effect and display its emoji
+                            ForEach(game.activeJinxEffects[game.localPlayerIndex], id: \.type) { effect in
+                                Text(emoji(for: effect.type))
+                                    .font(.system(size: isiPad ? 24 : 18))
+                                    .padding(8) // 1. Add some padding so the circle isn't too tight
+                                    .background(
+                                        // 2. Add a Circle shape as the background
+                                        Circle()
+                                            .fill(Color.white.opacity(0.25)) // 3. Fill it with semi-transparent white
+                                    )
+                                    .transition(.scale)
+                            }
+                        }
+                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 30)
+                        .animation(.bouncy, value: game.activeJinxEffects[game.localPlayerIndex])
+                    }
                 }
                 //  When all players have received the deck, the game can start. This time we use the game.players variable because it is faster than checking the match variable again. However, this means we need to start from 1 because game.players includes the local player.
                 //  TODO: Double click the startGame function and jump to definition.
@@ -168,7 +187,7 @@ class MockCardGame: CardGame {
         let trumpCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "trump") }
             .flatMap { value in
-                (0..<2).map { _ in Card(cardType: .action, value: value) }
+                (0..<1).map { _ in Card(cardType: .action, value: value) }
             }
         
         deck.append(contentsOf: jinxCards)

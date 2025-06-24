@@ -69,7 +69,7 @@ extension CardGame {
 
 // Background Music
 
-extension CardGame {
+extension CardGame {    
     func playBackgroundMusic(named name: String, fadeDuration: TimeInterval = 1.5) {
         guard let url = Bundle.main.url(forResource: name, withExtension: "m4a") else {
             print("Music file \(name) not found.")
@@ -96,8 +96,8 @@ extension CardGame {
         let step: Float = 0.05
         fadeTimer = Timer.scheduledTimer(withTimeInterval: duration * Double(step), repeats: true) { timer in
             player.volume += step
-            if player.volume >= 1.0 {
-                player.volume = 1.0
+            if player.volume >= self.bgmVolume {
+                player.volume = self.bgmVolume
                 timer.invalidate()
             }
         }
@@ -115,7 +115,7 @@ extension CardGame {
             player.volume -= step
             if player.volume <= 0 {
                 player.stop()
-                player.volume = 1.0
+                player.volume = self.bgmVolume
                 timer.invalidate()
                 completion()
             }
