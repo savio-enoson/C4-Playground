@@ -29,7 +29,7 @@ struct PlayersContainer: View {
                         otherPlayerProfile(
                             playerName: game.players[playersExcludingMe[0]].displayName,
                             image: game.playerProfileImages[playersExcludingMe[0]],
-                            myTurn: game.whoseTurn == 1
+                            myTurn: game.whoseTurn == playersExcludingMe[0]
                         )
                         .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                     }
@@ -41,7 +41,7 @@ struct PlayersContainer: View {
                             otherPlayerProfile(
                                 playerName: game.players[playersExcludingMe[0]].displayName,
                                 image: game.playerProfileImages[playersExcludingMe[0]],
-                                myTurn: game.whoseTurn == 1
+                                myTurn: game.whoseTurn == playersExcludingMe[0]
                             )
                             .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
@@ -54,7 +54,7 @@ struct PlayersContainer: View {
                             otherPlayerProfile(
                                 playerName: game.players[playersExcludingMe[1]].displayName,
                                 image: game.playerProfileImages[playersExcludingMe[1]],
-                                myTurn: game.whoseTurn == 2
+                                myTurn: game.whoseTurn == playersExcludingMe[1]
                             )
                             .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
@@ -68,7 +68,7 @@ struct PlayersContainer: View {
                         otherPlayerProfile(
                             playerName: game.players[playersExcludingMe[0]].displayName,
                             image: game.playerProfileImages[playersExcludingMe[0]],
-                            myTurn: game.whoseTurn == 1
+                            myTurn: game.whoseTurn == playersExcludingMe[0]
                         )
                         .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                         
@@ -79,7 +79,7 @@ struct PlayersContainer: View {
                                 otherPlayerProfile(
                                     playerName: game.players[playersExcludingMe[1]].displayName,
                                     image: game.playerProfileImages[playersExcludingMe[1]],
-                                    myTurn: game.whoseTurn == 2
+                                    myTurn: game.whoseTurn == playersExcludingMe[1]
                                 )
                                 .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }
@@ -92,7 +92,7 @@ struct PlayersContainer: View {
                                 otherPlayerProfile(
                                     playerName: game.players[playersExcludingMe[2]].displayName,
                                     image: game.playerProfileImages[playersExcludingMe[2]],
-                                    myTurn: game.whoseTurn == 3
+                                    myTurn: game.whoseTurn == playersExcludingMe[2]
                                 )
                                 .offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }

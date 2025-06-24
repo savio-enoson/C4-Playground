@@ -193,8 +193,8 @@ class MockCardGame: CardGame {
         let emptyStatus: [StatusEffect] = []
         activeJinxEffects = Array(repeating: emptyStatus, count: players.count)
         activeJinxEffects[0] = [
-            StatusEffect(type: .jinx_banana, duration: 1),
-            StatusEffect(type: .jinx_confusion, duration: 1)
+            StatusEffect(type: .jinx_banana, duration: 10),
+            StatusEffect(type: .jinx_dementia, duration: 1)
         ]
         
         // Mock profile images

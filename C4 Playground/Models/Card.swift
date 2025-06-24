@@ -16,9 +16,10 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_5 = "-5"
     
     case jinx_banana = "jinx_banana"
-    case jinx_dog = "jinx_dog"  // Gavin
-    case jinx_confusion = "jinx_confusion"  // Karyna
-    case jinx_hallucination = "jinx_hallucination"  // Savio
+    case jinx_confusion = "jinx_confusion"  // asset ngasal
+    case jinx_hallucination = "jinx_hallucination"  // asset ngasal
+    case jinx_blackout = "jinx_blackout"    // asset ngasal
+    case jinx_dementia = "jinx_dementia"    // asset ngasal
     
     case trump_wipeout = "trump_wipeout"
     case trump_maxout = "trump_maxout"

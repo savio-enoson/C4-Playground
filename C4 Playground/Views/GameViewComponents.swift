@@ -150,6 +150,8 @@ struct PlayerHandView: View {
     @ObservedObject var game: CardGame
     @State private var highlightedCard: Card? = nil
     @State private var maskedCardInfo: (id: UUID, maskValue: String)? = nil
+    @State private var forgottenCardIndex: Int? = nil
+    
     let columns: Int = isiPad ? 5 : 3
     let maxCardWidth = isiPad ? 150.0 : 100.0
     let maxBodyWidth = isiPad ? 750.0 : UIScreen.main.bounds.width
@@ -166,6 +168,18 @@ struct PlayerHandView: View {
         let myStatusEffects = game.activeJinxEffects[game.localPlayerIndex]
         let isConfused = myStatusEffects.contains { $0.type == .jinx_confusion }
         let isHallucinating = myStatusEffects.contains { $0.type == .jinx_hallucination }
+        let isForgetful = myStatusEffects.contains { $0.type == .jinx_dementia }
+        
+        // Update forgotten card when effect starts
+        if isForgetful && forgottenCardIndex == nil {
+            DispatchQueue.main.async {
+                if !game.playerHands[game.localPlayerIndex].isEmpty {
+                    forgottenCardIndex = Int.random(in: 0..<game.playerHands[game.localPlayerIndex].count)
+                }
+            }
+        } else if !isForgetful {
+            forgottenCardIndex = nil
+        }
         
         // Set or clear hallucination mask
         if isHallucinating && maskedCardInfo == nil {
@@ -181,29 +195,37 @@ struct PlayerHandView: View {
         
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), spacing: 10) {
             ForEach(Array(game.playerHands[game.localPlayerIndex].enumerated()), id: \.element.id) { index, card in
-                CardView(
-                    card: card,
-                    onPlay: { game.playCard(playedCard: card, indexInHand: index) },
-                    isFaceUp: true,
-                    maskImage: isHallucinating && card.id == maskedCardInfo?.id ? maskedCardInfo?.maskValue : nil
-                )
-                .frame(maxWidth: maxCardWidth)
-                .scaleEffect(highlightedCard?.id == card.id ? 1.1 : 1.0)
-                .offset(y: highlightedCard?.id == card.id ? -20 : 0)
-                .zIndex(highlightedCard?.id == card.id ? 1 : 0)
-                .rotation3DEffect(
-                    .degrees(isConfused ? 180 : 0),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.5
-                )
-                .transition(.asymmetric(
-                    insertion: .scale.combined(with: .opacity),
-                    removal: .scale.combined(with: .opacity)
-                ))
-                .onTapGesture {
-                    handleCardTap(card: card, index: index)
+                if isForgetful && index == forgottenCardIndex {
+                    // Transparent rectangle placeholder
+                    Rectangle()
+                        .fill(Color.clear)
+                        .aspectRatio(CGFloat(2.5 / 3.5), contentMode: .fit)
+                        .frame(maxWidth: maxCardWidth)
+                } else {
+                    CardView(
+                        card: card,
+                        onPlay: { game.playCard(playedCard: card, indexInHand: index) },
+                        isFaceUp: true,
+                        maskImage: isHallucinating && card.id == maskedCardInfo?.id ? maskedCardInfo?.maskValue : nil
+                    )
+                    .frame(maxWidth: maxCardWidth)
+                    .scaleEffect(highlightedCard?.id == card.id ? 1.1 : 1.0)
+                    .offset(y: highlightedCard?.id == card.id ? -20 : 0)
+                    .zIndex(highlightedCard?.id == card.id ? 1 : 0)
+                    .rotation3DEffect(
+                        .degrees(isConfused ? 180 : 0),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: 0.5
+                    )
+                    .transition(.asymmetric(
+                        insertion: .scale.combined(with: .opacity),
+                        removal: .scale.combined(with: .opacity)
+                    ))
+                    .onTapGesture {
+                        handleCardTap(card: card, index: index)
+                    }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
             }
         }
         .padding()
@@ -211,56 +233,111 @@ struct PlayerHandView: View {
     }
     
     var smallPlayerHand: some View {
+        let myStatusEffects = game.activeJinxEffects[game.localPlayerIndex]
+        let isConfused = myStatusEffects.contains { $0.type == .jinx_confusion }
+        let isHallucinating = myStatusEffects.contains { $0.type == .jinx_hallucination }
+        let isForgetful = myStatusEffects.contains { $0.type == .jinx_dementia }
         let numCards = game.playerHands[game.localPlayerIndex].count
         let smallerCardSize = cardWidth * 0.5
+        
+        // The following logic has been added to match the largePlayerHand view
+        
+        // Update forgotten card when effect starts
+        if isForgetful && forgottenCardIndex == nil {
+            DispatchQueue.main.async {
+                if !game.playerHands[game.localPlayerIndex].isEmpty {
+                    forgottenCardIndex = Int.random(in: 0..<game.playerHands[game.localPlayerIndex].count)
+                }
+            }
+        } else if !isForgetful {
+            forgottenCardIndex = nil
+        }
+        
+        // Set or clear hallucination mask
+        if isHallucinating && maskedCardInfo == nil {
+            DispatchQueue.main.async {
+                if let randomCard = game.playerHands[game.localPlayerIndex].randomElement() {
+                    maskedCardInfo = (randomCard.id, getRandomCardValue())
+                    print("Set new mask: \(maskedCardInfo!.maskValue) on card \(maskedCardInfo!.id)")
+                }
+            }
+        } else if !isHallucinating && maskedCardInfo != nil {
+            maskedCardInfo = nil
+        }
         
         return VStack(spacing: -40) {
             if numCards >= 4 {
                 // Bottom row (3 cards - appears visually on top)
-                HStack {
+                HStack(spacing: -15) {
                     ForEach(0..<3, id: \.self) { index in
-                        let currentCard = game.playerHands[game.localPlayerIndex][index]
-                        CardView(
-                            card: currentCard,
-                            onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) },
-                            isFaceUp: true
-                        )
-                        .frame(width: smallerCardSize)
-                        .scaleEffect(highlightedCard?.id == currentCard.id ? 1.1 : 1.0)
-                        .offset(y: highlightedCard?.id == currentCard.id ? -20 : 0)
-                        .zIndex(highlightedCard?.id == currentCard.id ? Double(index) + 100 : Double(index))
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                        .onTapGesture {
-                            handleCardTap(card: currentCard, index: index)
+                        if isForgetful && index == forgottenCardIndex {
+                            // Transparent rectangle for forgotten card
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: smallerCardSize)
+                                .aspectRatio(2.5/3.5, contentMode: .fit)
+                        } else {
+                            let currentCard = game.playerHands[game.localPlayerIndex][index]
+                            CardView(
+                                card: currentCard,
+                                onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) },
+                                isFaceUp: true,
+                                maskImage: isHallucinating && currentCard.id == maskedCardInfo?.id ? maskedCardInfo?.maskValue : nil
+                            )
+                            .frame(width: smallerCardSize)
+                            .scaleEffect(highlightedCard?.id == currentCard.id ? 1.1 : 1.0)
+                            .offset(y: highlightedCard?.id == currentCard.id ? -20 : 0)
+                            .zIndex(highlightedCard?.id == currentCard.id ? Double(index) + 100 : Double(index))
+                            .rotation3DEffect(
+                                .degrees(isConfused ? 180 : 0),
+                                axis: (x: 0, y: 1, z: 0)
+                            )
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity)
+                            ))
+                            .onTapGesture {
+                                handleCardTap(card: currentCard, index: index)
+                            }
+                            .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
                         }
-                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
                     }
                 }
                 
                 // Top row (remaining cards - appears underneath)
-                HStack {
+                HStack(spacing: -15) {
                     ForEach(3..<numCards, id: \.self) { index in
-                        let currentCard = game.playerHands[game.localPlayerIndex][index]
-                        CardView(
-                            card: currentCard,
-                            onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) },
-                            isFaceUp: true
-                        )
-                        .frame(width: smallerCardSize)
-                        .scaleEffect(highlightedCard?.id == currentCard.id ? 1.1 : 1.0)
-                        .offset(y: highlightedCard?.id == currentCard.id ? -20 : 0)
-                        .zIndex(highlightedCard?.id == currentCard.id ? Double(index) + 100 : Double(index))
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                        .onTapGesture {
-                            handleCardTap(card: currentCard, index: index)
+                        if isForgetful && index == forgottenCardIndex {
+                            // Transparent rectangle for forgotten card
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: smallerCardSize)
+                                .aspectRatio(2.5/3.5, contentMode: .fit)
+                        } else {
+                            let currentCard = game.playerHands[game.localPlayerIndex][index]
+                            CardView(
+                                card: currentCard,
+                                onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) },
+                                isFaceUp: true,
+                                maskImage: isHallucinating && currentCard.id == maskedCardInfo?.id ? maskedCardInfo?.maskValue : nil
+                            )
+                            .frame(width: smallerCardSize)
+                            .scaleEffect(highlightedCard?.id == currentCard.id ? 1.1 : 1.0)
+                            .offset(y: highlightedCard?.id == currentCard.id ? -20 : 0)
+                            .zIndex(highlightedCard?.id == currentCard.id ? Double(index) + 100 : Double(index))
+                            .rotation3DEffect(
+                                .degrees(isConfused ? 180 : 0),
+                                axis: (x: 0, y: 1, z: 0)
+                            )
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity)
+                            ))
+                            .onTapGesture {
+                                handleCardTap(card: currentCard, index: index)
+                            }
+                            .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
                         }
-                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: highlightedCard)
                     }
                 }
             }
@@ -269,6 +346,7 @@ struct PlayerHandView: View {
     }
     
     private func handleCardTap(card: Card, index: Int) {
+        guard forgottenCardIndex != index else { return }
         if highlightedCard?.id == card.id {
             // Card is already highlighted - play it
             guard game.whoseTurn == game.localPlayerIndex else {
@@ -289,14 +367,8 @@ func getRandomCardValue() -> String {
     let randomCases: [String] = [
         "card_add_1", "card_add_2", "card_add_3", "card_add_4", "card_add_5",
         "card_subtract_1", "card_subtract_2", "card_subtract_3", "card_subtract_4", "card_subtract_5",
-        "card_jinx_banana", "card_jinx_dog", "card_jinx_confusion", "card_jinx_hallucination",
-        "card_trump_wipeout", "card_trump_maxout", "card_trump_limitchange"
+        "card_jinx_banana", "card_jinx_confusion", "card_jinx_hallucination", "card_jinx_blackout", "card_jinx_dementia",
+        "card_trump_wipeout", "card_trump_maxout", "card_trump_limitchange",
     ]
     return randomCases.randomElement()!
-}
-
-// Helper function to select one random card index
-func randomCardIndexToMask(count: Int) -> Int {
-    guard count > 0 else { return 0 }
-    return Int.random(in: 0..<count)
 }

@@ -13,7 +13,7 @@ struct BustedAlertView: View {
 
     var body: some View {
         ZStack{
-            Text("💥\(playerName)💥\nhas gone over the limit!\nBetter luck next time!")
+            Text("💥\(playerName)💥\nHas gone over the limit!\nBetter luck next time!")
                 .font(.cBody)
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
@@ -37,7 +37,7 @@ struct WinnerAlertView: View{
 
     var body: some View {
         ZStack{
-            Text("🏆 WINNER 🏆\nCongrats\n\(playerName)\nfor being the last one to bust!")
+            Text("🎉Congratulations🎉\n\(playerName),\nYou busted all your foes!")
                 .font(.cBody)
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)

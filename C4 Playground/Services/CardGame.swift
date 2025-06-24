@@ -322,14 +322,16 @@ class CardGame: NSObject, ObservableObject {
 
         case .action:
             switch playedCard.value {
-            case .jinx_dog:
-                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_dog, duration: 100))
             case .jinx_banana:
                 activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_banana, duration: 1))
             case .jinx_confusion:
                 activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_confusion, duration: 3))
             case .jinx_hallucination:
                 activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_hallucination, duration: 3))
+            case .jinx_blackout:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_blackout, duration: 3))
+            case .jinx_dementia:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_dementia, duration: 3))
             case .trump_wipeout:
                 tally = 0
             case .trump_maxout:
@@ -430,12 +432,7 @@ class CardGame: NSObject, ObservableObject {
         
         if !hasBanana {
             // Advance to next player
-            whoseTurn = (whoseTurn + 1) % players.count
-            
-            // Skip eliminated players
-            while playerIsEliminated[whoseTurn] {
-                whoseTurn = (whoseTurn + 1) % players.count
-            }
+            whoseTurn = findNextPlayer()
         }
         
         // Check if all players are eliminated (except possibly current player)
@@ -485,5 +482,18 @@ class CardGame: NSObject, ObservableObject {
         if otherPlayersEliminated {
             localPlayerWon = true
         }
+    }
+    
+    private func findNextPlayer() -> Int {
+        var testIndex = whoseTurn
+        // Advance to next player
+        testIndex = (testIndex + 1) % players.count
+        
+        // Skip eliminated players
+        while playerIsEliminated[testIndex] {
+            testIndex = (testIndex + 1) % players.count
+        }
+        
+        return testIndex
     }
 }
