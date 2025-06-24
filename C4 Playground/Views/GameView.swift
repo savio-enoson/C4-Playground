@@ -11,6 +11,9 @@ import GameKit
 //var countdownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
 struct GameView: View {
+    @State private var showBustedAlert = false
+    @State private var showWinnerAlert = false
+    
     @State private var showDropArea = false
     @State private var dropAreaSize: CGSize = .init(width: isiPad ? 400.0 : 300.0, height: isiPad ? 300.0 : 200.0)
 
@@ -54,7 +57,7 @@ struct GameView: View {
                     
                     PlayerHandView(game: game)
                         .frame(maxWidth: .infinity)
-                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 150)
+                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 75)
                         .offset(x: 0, y: (game.whoseTurn == game.localPlayerIndex) ? -100 : 0)
                         .animation(.easeInOut, value: game.whoseTurn)
                 }
@@ -71,26 +74,37 @@ struct GameView: View {
                         game.playersReceivedReshuffleCMD = 1
                     }
                 })
-                .alert("You Busted! 😜", isPresented: $game.playerIsEliminated[game.localPlayerIndex]) {
-                    Button("I Concede 😔") {
-                        game.inGame = false
-                    }
-                } message: {
-                    Text("Uh, oh, the tally has gone over \(game.maxTally)!")
-                }
-                .alert("You Won!", isPresented: $game.localPlayerWon) {
-                    Button("Hurray 🎉! ") {
-                        game.inGame = false
-                    }
-                } message: {
-                    Text("You are the last player standing, way to go!")
-                }
             }
         }
         .onAppear {
             game.playBackgroundMusic(named: "in_game")
         }
         .edgesIgnoringSafeArea(.all)
+        
+        if game.inGame {
+            // Alert overlays
+            if game.playerIsEliminated[game.localPlayerIndex] {
+                GameEndAlertContainer(
+                    content: BustedAlertView(playerName: game.localPlayer.displayName) {
+                        game.inGame = false
+                    },
+                    onDismiss: {
+                        game.inGame = false
+                    }
+                )
+            }
+            
+            if game.localPlayerWon {
+                GameEndAlertContainer(
+                    content: WinnerAlertView(playerName: game.localPlayer.displayName) {
+                        game.inGame = false
+                    },
+                    onDismiss: {
+                        game.inGame = false
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -102,21 +116,11 @@ struct GameView_Previews: PreviewProvider {
         mockGame.setupHaptics()
         
         return GameView(game: mockGame)
-            .task {
+            .onAppear {
                 for index in 0..<mockGame.players.count {
                     mockGame.mockPreviewDealCards(to: index, numOfCards: 4)
                 }
-                
-                // Loop turns forever (or until stopped manually)
-                while true {
-                    for turn in 0..<mockGame.players.count {
-                        await MainActor.run {
-                            mockGame.whoseTurn = turn
-                            mockGame.localPlayerIndex = turn // Simulate you're each player
-                        }
-                        try? await Task.sleep(nanoseconds: 7_000_000_000) // 2 seconds per turn
-                    }
-                }
+                mockGame.mockPreviewDealCards(to: 0, numOfCards: 1)
             }
     }
 }
@@ -127,6 +131,9 @@ class MockCardGame: CardGame {
         // Setup mock game state
         inGame = true
         deck = []
+        
+        localPlayerIndex = 0
+        whoseTurn = localPlayerIndex
 
         let subtractCards: [Card] = CardValue.allCases
             .filter {
@@ -197,8 +204,6 @@ class MockCardGame: CardGame {
         playerProfileImages = Array(repeating: Image(systemName: "person.circle"), count: players.count)
         
         playerIsEliminated = Array(repeating: false, count: players.count)
-        localPlayerIndex = 0
-        whoseTurn = localPlayerIndex
     }
     
     func mockPreviewDealCards(to: Int, numOfCards: Int) {
