@@ -125,7 +125,7 @@ class CardScene: SKScene {
         let basePosition = CGPoint(x: playArea.frame.maxX + 60, y: playArea.frame.midY)
 
         for (i, card) in deck.enumerated() {
-            let cardNode = CardNode(card: card, false) // Face-down
+            let cardNode = CardNode(card: card, isFaceUp: false) // Face-down
             cardNode.zPosition = CGFloat(i)
             cardNode.position = basePosition
             cardNode.name = "deck_card_\(i)"
@@ -136,7 +136,7 @@ class CardScene: SKScene {
     
     private func layoutHand(_ hand: [Card], isFaceUp: Bool, seatPosition: Int) {
         for (index, card) in hand.enumerated() {
-            let cardNode = CardNode(card: card, isFaceUp)
+            let cardNode = CardNode(card: card, isFaceUp: isFaceUp)
             // Add position/rotation logic here as needed
             addChild(cardNode)
         }
@@ -144,7 +144,7 @@ class CardScene: SKScene {
     
     private func layoutPlayer(at seat: SeatPosition, with cards: [Card], isFaceUp: Bool) {
         for (index, card) in cards.enumerated() {
-            let cardNode = CardNode(card: card, isFaceUp)
+            let cardNode = CardNode(card: card, isFaceUp: isFaceUp)
             let spacing: CGFloat = 70
             var position: CGPoint = .zero
             var rotation: CGFloat = 0

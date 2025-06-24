@@ -36,7 +36,7 @@ class GameScene: SKScene {
     
 //    DISPLAY SETUP
     override func didMove(to view: SKView) {
-        backgroundColor = .systemGreen
+        backgroundColor = SKColor(red: 45/255, green: 101/255, blue: 80/255, alpha: 1)
         layoutCards(game.playerHands)
         layoutPlayArea()
         layoutDeck(deck: game.deck)
@@ -67,7 +67,7 @@ class GameScene: SKScene {
     
     private func layoutPlayer(at seat: SeatPosition, with cards: [Card], isFaceUp: Bool) {
         for (index, card) in cards.enumerated() {
-            let cardNode = CardNode(card: card, isFaceUp)
+            let cardNode = CardNode(card: card, isFaceUp: isFaceUp)
             let spacing: CGFloat = 70
             var position: CGPoint = .zero
             var rotation: CGFloat = 0
@@ -107,7 +107,7 @@ class GameScene: SKScene {
     
     private func layoutHand(_ hand: [Card], isFaceUp: Bool, seatPosition: Int) {
         for (_, card) in hand.enumerated() {
-            let cardNode = CardNode(card: card, isFaceUp)
+            let cardNode = CardNode(card: card, isFaceUp: isFaceUp)
             // Add position/rotation logic here as needed
             addChild(cardNode)
         }
@@ -119,7 +119,7 @@ class GameScene: SKScene {
         let basePosition = CGPoint(x: playArea.frame.maxX, y: playArea.frame.midY)
 
         for (i, card) in deck.enumerated() {
-            let cardNode = CardNode(card: card, false)
+            let cardNode = CardNode(card: card, isFaceUp: false)
             
             // Offset each card slightly upwards by 1 point
             let offset = CGFloat(i) * 1.0
@@ -173,7 +173,7 @@ class GameScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        let touchedCard = nodes(at: location).compactMap { $0 as? CardNode }.last
+        let touchedCard = nodes(at: location).compactMap { $0 as? CardNode }.first
         
         // Check if this card belongs to the local player
         guard let cardNode = touchedCard else { return }
