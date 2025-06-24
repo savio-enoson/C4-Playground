@@ -379,6 +379,12 @@ class CardGame: NSObject, ObservableObject {
                     let adjustment = options.randomElement() ?? 0
                     maxTally += adjustment
                     print("🎯 Limit Change Played. Bust limit is now \(maxTally) (adjusted by \(adjustment))")
+                    do {
+                        let data = encode(playedCard: playedCard, indexInHand: indexInHand, adjustment: adjustment)
+                        try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+                    } catch {
+                        print("Error: \(error.localizedDescription).")
+                    }
                 }
             }
         }
