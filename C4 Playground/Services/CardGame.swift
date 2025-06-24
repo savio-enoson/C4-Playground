@@ -24,9 +24,9 @@ class CardGame: NSObject, ObservableObject {
     @Published var whoseTurn: Int = 0
     @Published var playerHands: [[Card]] = []
     var playerProfileImages: [Image] = []
-    var playerIsEliminated: [Bool] = []
+    @Published var playerIsEliminated: [Bool] = []
     var hasPlayed = false
-    var localPlayerWon = false
+    @Published var localPlayerWon = false
     var playersReady = 0
     
     @Published var playersReceivedDeck = 1
@@ -446,16 +446,27 @@ class CardGame: NSObject, ObservableObject {
             hasPlayed = false
             
             // Update Status Effects
-            for index in activeJinxEffects[localPlayerIndex].indices {
-                // Increment time
-                activeJinxEffects[localPlayerIndex][index].incrementTime()
-                
-                // Remove if duration reached
-                if activeJinxEffects[localPlayerIndex][index].timeElapsed! >=
-                   activeJinxEffects[localPlayerIndex][index].duration {
-                    activeJinxEffects[localPlayerIndex].remove(at: index)
-                }
+            updateStatusEffect()
+        }
+    }
+    
+    private func updateStatusEffect() {
+        // Update Status Effects
+        var effectsToRemove = [Int]() // Track indices to remove
+
+        // First pass: increment time and mark expired effects
+        for index in activeJinxEffects[localPlayerIndex].indices {
+            activeJinxEffects[localPlayerIndex][index].incrementTime()
+            
+            if activeJinxEffects[localPlayerIndex][index].timeElapsed! >=
+               activeJinxEffects[localPlayerIndex][index].duration {
+                effectsToRemove.append(index)
             }
+        }
+
+        // Second pass: remove expired effects in reverse order
+        for index in effectsToRemove.sorted(by: >) {
+            activeJinxEffects[localPlayerIndex].remove(at: index)
         }
     }
     

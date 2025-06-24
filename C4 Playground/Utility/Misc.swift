@@ -35,3 +35,32 @@ struct GlobalPositionKey: PreferenceKey {
         value = nextValue()
     }
 }
+
+struct GameEndAlertContainer<Content: View>: View {
+    let content: Content
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        ZStack {
+            // Darkened overlay
+            Color.black.opacity(0.5)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    onDismiss()
+                }
+            
+            // Alert content
+            VStack {
+                Spacer()
+                
+                content
+                    .padding(.bottom, 100)
+                
+                Spacer()
+            }
+        }
+        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        .transition(.opacity)
+        .zIndex(100) // Ensure it appears above everything
+    }
+}

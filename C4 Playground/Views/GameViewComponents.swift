@@ -272,8 +272,9 @@ struct PlayerHandView: View {
         if highlightedCard?.id == card.id {
             // Card is already highlighted - play it
             guard game.whoseTurn == game.localPlayerIndex else {
-                    // If it's not our turn, do nothing.
-                    return
+                // If it's not our turn, do nothing.
+                highlightedCard = nil
+                return
             }
             game.playCard(playedCard: card, indexInHand: index)
             highlightedCard = nil
