@@ -87,6 +87,9 @@ struct GameView: View {
                 }
             }
         }
+        .onAppear {
+            game.playBackgroundMusic(named: "in_game")
+        }
         .edgesIgnoringSafeArea(.all)
     }
 }

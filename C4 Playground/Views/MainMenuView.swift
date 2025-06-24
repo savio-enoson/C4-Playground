@@ -99,6 +99,9 @@ struct MainMenuView: View {
             }
         }
         .ignoresSafeArea(.all)
+        .onAppear {
+            game.playBackgroundMusic(named: "in_lobby")
+        }
 //        .task {
 //            print(cardCarouselDeck[0].imageName)
 //        }

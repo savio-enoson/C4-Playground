@@ -46,6 +46,10 @@ class MainMenuScene: SKScene {
     override func didMove(to view: SKView) {
         layoutScene()
         
+        if let game = cardGame {
+            game.playBackgroundMusic(named: "in_lobby")
+        }
+        
         // Avoid adding duplicates
         view.gestureRecognizers?.removeAll(where: { $0.name == "ruleSwipe" })
 

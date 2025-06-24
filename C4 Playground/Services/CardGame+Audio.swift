@@ -66,3 +66,59 @@ extension CardGame {
         }
     }
 }
+
+// Background Music
+
+extension CardGame {
+    func playBackgroundMusic(named name: String, fadeDuration: TimeInterval = 1.5) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "m4a") else {
+            print("Music file \(name) not found.")
+            return
+        }
+
+        fadeOutCurrentMusic(duration: fadeDuration) {
+            do {
+                self.musicPlayer = try AVAudioPlayer(contentsOf: url)
+                self.musicPlayer?.volume = 0
+                self.musicPlayer?.numberOfLoops = -1
+                self.musicPlayer?.prepareToPlay()
+                self.musicPlayer?.play()
+                self.fadeInMusic(duration: fadeDuration)
+            } catch {
+                print("Error loading \(name): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func fadeInMusic(duration: TimeInterval) {
+        fadeTimer?.invalidate()
+        guard let player = musicPlayer else { return }
+        let step: Float = 0.05
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: duration * Double(step), repeats: true) { timer in
+            player.volume += step
+            if player.volume >= 1.0 {
+                player.volume = 1.0
+                timer.invalidate()
+            }
+        }
+    }
+
+    private func fadeOutCurrentMusic(duration: TimeInterval, completion: @escaping () -> Void) {
+        fadeTimer?.invalidate()
+        guard let player = musicPlayer else {
+            completion()
+            return
+        }
+
+        let step: Float = 0.05
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: duration * Double(step), repeats: true) { timer in
+            player.volume -= step
+            if player.volume <= 0 {
+                player.stop()
+                player.volume = 1.0
+                timer.invalidate()
+                completion()
+            }
+        }
+    }
+}
