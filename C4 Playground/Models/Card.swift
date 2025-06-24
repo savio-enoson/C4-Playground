@@ -16,9 +16,9 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_5 = "-5"
     
     case jinx_banana = "jinx_banana"
-    case jinx_dog = "jinx_dog"
-    case jinx_confusion = "jinx_confusion"
-    case jinx_hallucination = "jinx_hallucination"
+    case jinx_dog = "jinx_dog"  // Gavin
+    case jinx_confusion = "jinx_confusion"  // Karyna
+    case jinx_hallucination = "jinx_hallucination"  // Savio
     
     case trump_wipeout = "trump_wipeout"
     case trump_maxout = "trump_maxout"
@@ -77,5 +77,9 @@ struct Card: Identifiable, Equatable, Codable {
 struct StatusEffect {
     let type: CardValue
     let duration: Int
-    let timeElapsed: Int? = 0
+    var timeElapsed: Int? = 0
+    
+    mutating func incrementTime() {
+        timeElapsed! += 1
+    }
 }

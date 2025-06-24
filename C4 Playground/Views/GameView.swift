@@ -30,7 +30,7 @@ struct GameView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
                         GameTally(game: game)
-                            .position(x: dropAreaTopBound.x, y: dropAreaTopBound.y - 200)
+                            .position(x: dropAreaTopBound.x, y: dropAreaTopBound.y - (isiPad ? 240 : 200))
                     }
                     .zIndex(.infinity)
                     
@@ -52,21 +52,21 @@ struct GameView: View {
                         Spacer()
                     }
                     
-                    if game.whoseTurn == game.localPlayerIndex {
-                        PlayerHandView(game: game)
-                            .frame(maxWidth: .infinity)
-                            .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 150)
-                    }
+                    PlayerHandView(game: game)
+                        .frame(maxWidth: .infinity)
+                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 150)
+                        .offset(x: 0, y: (game.whoseTurn == game.localPlayerIndex) ? -100 : 0)
+                        .animation(.easeInOut, value: game.whoseTurn)
                 }
                 //  When all players have received the deck, the game can start. This time we use the game.players variable because it is faster than checking the match variable again. However, this means we need to start from 1 because game.players includes the local player.
                 //  TODO: Double click the startGame function and jump to definition.
                 .onChange(of: game.playersReceivedDeck, {
-                    if game.playersReceivedDeck == game.players.count {
+                    if game.playersReceivedDeck == game.players.count, game.host == GKLocalPlayer.local {
                         game.startGame()
                     }
                 })
                 .onChange(of: game.playersReceivedReshuffleCMD, {
-                    if game.playersReceivedReshuffleCMD == game.players.count {
+                    if game.playersReceivedReshuffleCMD == game.players.count, game.host == GKLocalPlayer.local {
                         game.finishTurn()
                         game.playersReceivedReshuffleCMD = 1
                     }
@@ -134,12 +134,23 @@ class MockCardGame: CardGame {
                 (0..<10).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
+        // Total 3
+        let jinxCards: [Card] = CardValue.allCases
+            .filter {
+                $0.rawValue.starts(with: "jinx")
+            }
+            .flatMap { value in
+                (0..<1).map { _ in Card(cardType: .action, value: value) }
+            }
+        
+        // 2 of each
         let trumpCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "trump") }
             .flatMap { value in
                 (0..<2).map { _ in Card(cardType: .action, value: value) }
             }
         
+        deck.append(contentsOf: jinxCards)
         deck.append(contentsOf: trumpCards)
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
@@ -158,8 +169,15 @@ class MockCardGame: CardGame {
         ]
         
         // Mock player hands
-        let emptyArr: [Card] = []
-        playerHands = Array(repeating: emptyArr, count: players.count)
+        let emptyHands: [Card] = []
+        playerHands = Array(repeating: emptyHands, count: players.count)
+        
+        let emptyStatus: [StatusEffect] = []
+        activeJinxEffects = Array(repeating: emptyStatus, count: players.count)
+        activeJinxEffects[0] = [
+            StatusEffect(type: .jinx_banana, duration: 1),
+            StatusEffect(type: .jinx_confusion, duration: 1)
+        ]
         
         // Mock profile images
         playerProfileImages = Array(repeating: Image(systemName: "person.circle"), count: players.count)

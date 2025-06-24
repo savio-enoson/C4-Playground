@@ -35,6 +35,7 @@ import SpriteKit
 //    }
 //}
 //
+
 #Preview {
     ContentView()
 }
@@ -61,8 +62,6 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            game.setupAudio()
-            game.setupHaptics()
             if !game.inGame {
                 game.authenticatePlayer()
             }

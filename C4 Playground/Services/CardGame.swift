@@ -66,7 +66,7 @@ class CardGame: NSObject, ObservableObject {
                 !$0.rawValue.starts(with: "trump")
             }
             .flatMap { value in
-                (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
+                (0..<1).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
         //
@@ -77,7 +77,7 @@ class CardGame: NSObject, ObservableObject {
                 !$0.rawValue.starts(with: "trump")
             }
             .flatMap { value in
-                (0..<5).map { _ in Card(cardType: .number, value: value) } // New card each time
+                (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
         // Total 3
@@ -93,7 +93,7 @@ class CardGame: NSObject, ObservableObject {
         let trumpCards: [Card] = CardValue.allCases
             .filter { $0.rawValue.starts(with: "trump") }
             .flatMap { value in
-                (0..<2).map { _ in Card(cardType: .action, value: value) }
+                (0..<1).map { _ in Card(cardType: .action, value: value) }
             }
         
         
@@ -120,22 +120,23 @@ class CardGame: NSObject, ObservableObject {
         
         // Player-Related Gameplay Variables
         whoseTurn = 0
-        players = []
-        playerHands = []
-        playerIsEliminated = []
-        playerProfileImages = []
+        players.removeAll()
+        playerHands.removeAll()
+        playerIsEliminated.removeAll()
+        playerProfileImages.removeAll()
+        activeJinxEffects.removeAll()
+        activeJinxEffects.removeAll()
+        
         hasPlayed = false
         localPlayerWon = false
         playersReady = 0
         playersReceivedDeck = 1
         playersReceivedReshuffleCMD = 1
         
-        // Action Cards
-        activeJinxEffects = []
-        
         // GK Variables
         match?.disconnect()
         match?.delegate = nil
+//        GKAccessPoint.shared.isActive = true
     }
     
     func setDiscardPosition(for cardId: UUID, index: Int) {
@@ -230,11 +231,11 @@ class CardGame: NSObject, ObservableObject {
         activeJinxEffects.append([])
     }
     
-    
     //  Sets up base variables for the game. resetGame is called here to reset variables before another game begins (garbage collection). Then, load data for each player. The game does not start until all players have completed this process. When done, they will send a data packet to the host to indicate that their game room is setup.
     //  TODO: Go to CardGame+GKMatchDelegate and look at the receiveData function.
     func setupGame(newMatch: GKMatch, host: GKPlayer) {
         resetGame()
+//        GKAccessPoint.shared.isActive = false
         
         inGame = true
         match = newMatch
@@ -248,8 +249,9 @@ class CardGame: NSObject, ObservableObject {
         setupPlayer(player: host, index: 0)
         
         for player in allExceptHost {
-            if player == localPlayer {
+            if player == GKLocalPlayer.local {
                 localPlayerIndex = counter
+                print("setting my index to \(counter)")
             }
             
             setupPlayer(player: player, index: counter)
@@ -264,6 +266,9 @@ class CardGame: NSObject, ObservableObject {
             } catch {
                 print("Error: \(error.localizedDescription).")
             }
+        } else {
+            // Ensure host is at index 0
+            localPlayerIndex = 0
         }
     }
     
@@ -275,6 +280,10 @@ class CardGame: NSObject, ObservableObject {
         }
         
         dealCards(to: whoseTurn, numOfCards: 1)
+        
+        print(playerHands)
+        print(players.count)
+        print(whoseTurn)
     }
     
     func changeLimit(amount: Int) {
@@ -289,8 +298,12 @@ class CardGame: NSObject, ObservableObject {
     //  This same function (well actually its the finishTurn function) then increments the turn to the next player's index. When other players receive the ping, the listener tells them to run this function (so as to not repeat the logic), but skip some logic and just increment the turn to the next player's.
     //  TODO: Go to finishTurn and reshuffleDeck functions.
     func playCard(playedCard: Card, indexInHand: Int, targetPlayerIndex: Int? = nil, isMyCard: Bool = true) {
-        // Prevent double inputs
         if isMyCard {
+            // Handle dragging card into center out of turn
+            if whoseTurn != localPlayerIndex {
+                return
+            }
+            // Prevent double inputs
             if hasPlayed {
                 return
             } else {
@@ -301,10 +314,10 @@ class CardGame: NSObject, ObservableObject {
         // TODO: Implement action card logic (might involve adding some more environment variables and maybe a new separate controller / delegate just for actions.
         switch playedCard.cardType {
         case .number:
-            switch playedCard.value {
-            default:
-                print("Current Card Value: \(playedCard.value.rawValue)")
-                tally += Int(playedCard.value.rawValue) ?? 0
+            print("Current Card Value: \(playedCard.value.rawValue)")
+            tally += Int(playedCard.value.rawValue) ?? 0
+            if tally <= -maxTally {
+                tally = -maxTally
             }
 
         case .action:
@@ -320,17 +333,23 @@ class CardGame: NSObject, ObservableObject {
             case .trump_wipeout:
                 tally = 0
             case .trump_maxout:
-                tally = 21
+                if maxTally < 21 {
+                    tally = maxTally
+                } else {
+                    tally = 21
+                }
             case .trump_limitchange:
-                let changeBy = Int.random(in: -3...3)
-                changeLimit(amount: changeBy)
-                
-                // Change limit for every player
-                do {
-                    let data = encode(message: "changeLimit", adjustBy: changeBy)
-                    try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
-                } catch {
-                    print("Error: \(error.localizedDescription).")
+                if isMyCard {
+                    let changeBy = Int.random(in: -2...2)
+                    changeLimit(amount: changeBy)
+                    
+                    // Change limit for every player
+                    do {
+                        let data = encode(message: "changeLimit", adjustBy: changeBy)
+                        try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+                    } catch {
+                        print("Error: \(error.localizedDescription).")
+                    }
                 }
             default:
                 print("action card logic not registered.")
@@ -338,7 +357,7 @@ class CardGame: NSObject, ObservableObject {
         }
         
         discardPile.append(playedCard)
-        playCardSound()
+//        playCardSound()
         
         // If local player is playing the card
         if isMyCard {
@@ -351,15 +370,14 @@ class CardGame: NSObject, ObservableObject {
                 print("Error: \(error.localizedDescription).")
             }
             
-            // Changed
+            // Reshuffle deck when out of cards
             if deck.count == 0 {
                 reshuffleCards()
             } else {
                 finishTurn()
             }
         } else {
-            advanceTurn()
-            hasPlayed = false
+            finishTurn()
         }
     }
    
@@ -400,53 +418,61 @@ class CardGame: NSObject, ObservableObject {
     
     //  Every time a player finishes playing a card, game checks if tally has gone over the limit. If true, send the death flag to all other players. If not, then pass the turn to the next player.
     func finishTurn() {
+        let myTurn = whoseTurn == localPlayerIndex
+        
         // Bust check :P
         if tally > maxTally {
             playerIsEliminated[whoseTurn] = true
         }
         
-        // If busted, tell everyone
-        if playerIsEliminated[whoseTurn], localPlayerIndex == whoseTurn {
-            advanceTurn()
-            dealCards(to: whoseTurn, numOfCards: 1)
+        let myStatusEffects = activeJinxEffects[localPlayerIndex]
+        let hasBanana = myStatusEffects.contains { $0.type == .jinx_banana }
+        
+        if !hasBanana {
+            // Advance to next player
+            whoseTurn = (whoseTurn + 1) % players.count
             
-            do {
-                let data = encode(message: "eliminate")
-                try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
-            } catch {
-                print("Error: \(error.localizedDescription).")
+            // Skip eliminated players
+            while playerIsEliminated[whoseTurn] {
+                whoseTurn = (whoseTurn + 1) % players.count
             }
+        }
+        
+        // Check if all players are eliminated (except possibly current player)
+        checkWinCondition()
+        
+        if myTurn {
+            dealCards(to: whoseTurn, numOfCards: 1)
+            hasPlayed = false
             
+            // Update Status Effects
+            for index in activeJinxEffects[localPlayerIndex].indices {
+                // Increment time
+                activeJinxEffects[localPlayerIndex][index].incrementTime()
+                
+                // Remove if duration reached
+                if activeJinxEffects[localPlayerIndex][index].timeElapsed! >=
+                   activeJinxEffects[localPlayerIndex][index].duration {
+                    activeJinxEffects[localPlayerIndex].remove(at: index)
+                }
+            }
+        }
+    }
+    
+    private func checkWinCondition() {
+        // Ensure we have valid player data
+        guard !playerIsEliminated.isEmpty,
+              localPlayerIndex < playerIsEliminated.count else {
             return
         }
         
-        advanceTurn()
-        dealCards(to: whoseTurn, numOfCards: 1)
-    }
-    
-    // TODO: Seems to be slightly bugged, does not immediately show the you win! alert when localPlayerWon is set to true. or maybe it isn't being set, idk
-    func eliminatePlayer(playerIndex: Int) {
-        // If last person standing, end game
-        if players.count == 2, playerIndex != localPlayerIndex {
+        // Check if all other players are eliminated
+        let otherPlayersEliminated = playerIsEliminated.enumerated().allSatisfy { index, isEliminated in
+            index == localPlayerIndex || isEliminated
+        }
+        
+        if otherPlayersEliminated {
             localPlayerWon = true
-            return
-        }
-        
-        tally = maxTally
-        
-        if playerIndex < localPlayerIndex {
-            localPlayerIndex -= 1
-        }
-        
-        if whoseTurn >= players.count-1 {
-            whoseTurn -= 1
-        }
-    }
-    
-    private func advanceTurn(){
-        whoseTurn = (whoseTurn + 1) % players.count
-        if playerIsEliminated[whoseTurn] {
-            advanceTurn()
         }
     }
 }

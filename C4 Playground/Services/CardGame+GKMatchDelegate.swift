@@ -105,7 +105,7 @@ extension CardGame: GKMatchDelegate {
             // Message + Number = Adjust a gameplay var
             if let adjustBy = gameData?.adjustBy {
                 switch message {
-                case "limitchange":
+                case "changeLimit":
                     changeLimit(amount: adjustBy)
                 default:
                     print("not yet set")
@@ -114,16 +114,13 @@ extension CardGame: GKMatchDelegate {
             } else {
             // Message Only = Updating some status
                 switch message {
-                case "eliminate":
-                    guard let playerIndex = gameData?.playerIndex else { return }
-                    eliminatePlayer(playerIndex: playerIndex)
                 //  Only host will receive this. When a player sends the message, increment playersReady by 1. When the counter reaches the number of expected pings, the match can begin.
                 //  TODO: Double click the createDeck function and jump to definition.
                 case "ready":
                     if localPlayer == host {
                         print("received ready message from \(player.displayName)")
+                        
                         playersReady += 1
-                        print ("Player \(playersReady) dan \(match.players.count)")
                         if playersReady == match.players.count {
                             createDeck()
                         }

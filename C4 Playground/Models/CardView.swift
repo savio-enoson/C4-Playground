@@ -14,6 +14,7 @@ struct CardView: View {
     let card: Card
     var onPlay: (() -> Void)? = nil
     var isFaceUp: Bool = false
+    var maskImage: String? = nil
     
     // Track movement with drag offset
     @State var startingY = 0.0
@@ -26,7 +27,7 @@ struct CardView: View {
         ZStack {
             ZStack {
                 if isFaceUp {
-                    Image(card.imageName)
+                    Image(maskImage ?? card.imageName)
                         .resizable()
                         .aspectRatio(aspectRatio, contentMode: .fit)
                 } else {
