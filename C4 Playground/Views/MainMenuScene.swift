@@ -75,7 +75,8 @@ class MainMenuScene: SKScene {
         cardFanOne()
 //        cardFanTwo()
         setupMenuCards(
-            imageNames: ["cardBack", "card_add_1", "card_add_2", "cardBack"],
+//            PLACEHOLDER - change the name of card_add_1 and card_add_2
+            imageNames: ["cardBack", "card_startGame", "card_howToPlay", "cardBack"],
             angleOffsetDegrees: 180
         )
     }
@@ -481,7 +482,7 @@ class MainMenuScene: SKScene {
                 dragCardToPlay(selectedCard)
 
                 // Special name behavior
-                if selectedCard.name == "card_add_1" {
+                if selectedCard.name == "card_startGame" {
                     self.cardGame?.playedCardMainMenu = selectedCard
                     self.cardGame?.playedCardOriginalPositionMainMenu = selectedCardOriginalPosition
 
@@ -494,7 +495,7 @@ class MainMenuScene: SKScene {
                     ]))
                 }
 
-                if selectedCard.name == "card_add_2", !isShowingRules {
+                if selectedCard.name == "card_howToPlay", !isShowingRules {
                     showRuleCards()
                 }
 

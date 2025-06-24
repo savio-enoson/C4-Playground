@@ -26,16 +26,16 @@ struct C4_PlaygroundApp: App {
 
     var body: some Scene {
         WindowGroup {
-            GameView(game: mockCardGame)
-                .task {
-                    mockCardGame.setupMockGame()
-                    for index in 0..<Int(mockCardGame.players.count) {
-                        mockCardGame.mockPreviewDealCards(to: index, numOfCards: 4)
-                    }
-                    // Local player is always 2 for some reason
-                    mockCardGame.mockPreviewDealCards(to: 0, numOfCards: 1)
-                }
-//            ContentView()
+//            GameView(game: mockCardGame)
+//                .task {
+//                    mockCardGame.setupMockGame()
+//                    for index in 0..<Int(mockCardGame.players.count) {
+//                        mockCardGame.mockPreviewDealCards(to: index, numOfCards: 4)
+//                    }
+//                    // Local player is always 2 for some reason
+//                    mockCardGame.mockPreviewDealCards(to: 0, numOfCards: 1)
+//                }
+            ContentView()
         }
         .modelContainer(sharedModelContainer)
     }
