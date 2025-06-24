@@ -17,6 +17,8 @@ class MainMenuScene: SKScene {
     private var selectedCardOriginalPosition: CGPoint?
     private var isDragging: Bool = false
     
+    var playedCards: [(node: CardNode, originalPosition: CGPoint, originalZPosition: CGFloat, originalZRotation: CGFloat)] = []
+
     var isPortrait: Bool {
         size.height >= size.width
     }
@@ -49,7 +51,7 @@ class MainMenuScene: SKScene {
         
         setupTitle()
         cardFanOne()
-        cardFanTwo()
+//        cardFanTwo()
         setupMenuCards(
             imageNames: ["cardBack", "card_add_1", "card_add_2", "cardBack"],
             angleOffsetDegrees: 180
@@ -94,7 +96,7 @@ class MainMenuScene: SKScene {
             y: titleImage.position.y - titleImage.size.height*2
         )
 
-        node.strokeColor = .black
+        node.strokeColor = SKColor(red: 45/255, green: 111/255, blue: 80/255, alpha: 1)
         node.lineWidth = 4
         node.zPosition = titleImage.zPosition - 100  // Behind the title
         node.name = "playArea"
@@ -143,7 +145,7 @@ class MainMenuScene: SKScene {
             cardNode.size = CGSize(width: height * (cardNode.texture!.size().width / cardNode.texture!.size().height), height: height)
             cardNode.name = imageName  // 👈 This line is crucial
             cardNode.position = position
-            cardNode.zRotation = angle
+            cardNode.zRotation = angle + .pi
             cardNode.zPosition = CGFloat(i)
 
             addChild(cardNode)
@@ -327,29 +329,61 @@ class MainMenuScene: SKScene {
         // Reset scale
         selectedCard.run(SKAction.scale(to: 1.0, duration: 0.1))
 
-        if isDragging {
-            if let playArea = playAreaNode,
-               selectedCard.name == "card_add_1",
-               selectedCard.frame.intersects(playArea.frame) {
+        if let playArea = playAreaNode {
+            if playArea.frame.intersects(selectedCard.frame) {
+                print("✅ Card played in hitbox area: \(selectedCard.card)")
+                let currentZ = selectedCard.zPosition
+                playedCards.append((
+                    node: selectedCard,
+                    originalPosition: selectedCardOriginalPosition ?? selectedCard.position,
+                    originalZPosition: selectedCard.zPosition,
+                    originalZRotation: selectedCard.zRotation
+                ))
 
-                // Move to center of play area
-                let moveToCenter = SKAction.move(to: playArea.position, duration: 0.3)
-                moveToCenter.timingMode = .easeOut
 
-                selectedCard.run(moveToCenter)
+                // Set the new highest zPosition
+                let maxZ = (children.compactMap { $0.zPosition }.max() ?? 0)
+                selectedCard.zPosition = maxZ + 1
 
-                // Delay before triggering matchmaking
-                run(SKAction.sequence([
-                    SKAction.wait(forDuration: 0.3),
-                    SKAction.run { [weak self] in
-                        self?.cardGame?.startMatchmaking()
-                    }
-                ]))
-            } else if let originalPosition = selectedCardOriginalPosition {
-                // Animate back to original position
-                let moveBack = SKAction.move(to: originalPosition, duration: 0.25)
-                moveBack.timingMode = .easeOut
-                selectedCard.run(moveBack)
+                let offsetX = CGFloat.random(in: -1...1)
+                let offsetY = CGFloat.random(in: -5...5)
+                let snapPosition = CGPoint(
+                    x: playArea.frame.midX + offsetX,
+                    y: playArea.frame.midY + offsetY
+                )
+
+                let angle = CGFloat.random(in: -15...15) * (.pi / 180)
+
+                let move = SKAction.move(to: snapPosition, duration: 0.2)
+                move.timingMode = .easeInEaseOut
+
+                let rotate = SKAction.rotate(toAngle: angle, duration: 0.2, shortestUnitArc: true)
+
+                let snap = SKAction.group([move, rotate])
+                selectedCard.run(snap)
+
+                selectedCard.run(SKAction.scale(to: 1.0, duration: 0.1))
+
+                if selectedCard.name == "card_add_1" {
+                    self.cardGame?.playedCardMainMenu = selectedCard
+                    self.cardGame?.playedCardOriginalPositionMainMenu = selectedCardOriginalPosition
+
+                    // Start matchmaking
+                    run(SKAction.sequence([
+                        SKAction.wait(forDuration: 0.3),
+                        SKAction.run { [weak self] in
+                            self?.cardGame?.startMatchmaking()
+                        }
+                    ]))
+                }
+            } else {
+                // Animate back to original position if card missed the play area
+                if let originalPosition = selectedCardOriginalPosition {
+                    let moveBack = SKAction.move(to: originalPosition, duration: 0.25)
+                    moveBack.timingMode = .easeOut
+                    selectedCard.run(moveBack)
+                }
+                print("Card dropped outside play area")
             }
         }
 
@@ -361,11 +395,28 @@ class MainMenuScene: SKScene {
         self.isDragging = false
     }
 
-
-
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         touchesEnded(touches, with: event)
     }
+    
+    func restorePlayedCardsToHand() {
+        for played in playedCards {
+            let moveBack = SKAction.move(to: played.originalPosition, duration: 0.25)
+            moveBack.timingMode = .easeOut
+
+            let rotateBack = SKAction.rotate(toAngle: played.originalZRotation, duration: 0.25, shortestUnitArc: true)
+            rotateBack.timingMode = .easeOut
+
+            let restore = SKAction.group([moveBack, rotateBack])
+            played.node.run(restore)
+
+            played.node.zPosition = played.originalZPosition
+        }
+
+        playedCards.removeAll()
+    }
+
+
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")

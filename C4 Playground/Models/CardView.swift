@@ -105,7 +105,7 @@ struct CardView_Previews: PreviewProvider {
                         onPlay: {
                           print("play")
                         },
-                        isFaceUp: true,
+                        isFaceUp: true
                     )
                     .frame(width: 120, height: 168)
                 }

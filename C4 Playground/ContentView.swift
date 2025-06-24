@@ -48,6 +48,8 @@ struct ContentView: View {
                 let scene = MainMenuScene(size: UIScreen.main.bounds.size)
                 scene.scaleMode = .resizeFill
                 scene.cardGame = game
+                game.mainMenuScene = scene
+
                 return scene
             }())
             .ignoresSafeArea()
