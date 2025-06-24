@@ -49,6 +49,8 @@ class CardGame: NSObject, ObservableObject {
     
     // Audio
     var audioPlayer: AVAudioPlayer?
+    var musicPlayer: AVAudioPlayer?
+    var fadeTimer: Timer?
     
     // Haptics
     var hapticEngine: CHHapticEngine?
