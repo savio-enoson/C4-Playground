@@ -51,11 +51,6 @@ struct CardView: View {
             )
             .offset(dragOffset)
             .scaleEffect(isDragging ? 1.1 : 1)
-            .onTapGesture {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                    onPlay?()
-                }
-            }
             .gesture(
                 // If dragged to center, letting go of card will trigger the onPlay function for it.
                 DragGesture()
@@ -67,9 +62,9 @@ struct CardView: View {
                         isDragging = false
                         
                         let globalYposition = value.location.y + startingY
-                        let handAreaHeight = (UIDevice.current.userInterfaceIdiom == .pad) ? 500.0 : 400.0
+                        let handAreaHeight = UIScreen.main.bounds.height * (UIDevice.current.orientation.isLandscape ? 0.5 : 0.65)
                         print("my current y: \(globalYposition)")
-                        if globalYposition <= UIScreen.main.bounds.height - handAreaHeight {
+                        if globalYposition <= handAreaHeight {
                             withAnimation(.spring()) {
                                 dragOffset = .zero
                                 onPlay?()
@@ -107,7 +102,10 @@ struct CardView_Previews: PreviewProvider {
                 ForEach(demoCards) { card in
                     CardView(
                         card: card,
-                        isFaceUp: true
+                        onPlay: {
+                          print("play")
+                        },
+                        isFaceUp: true,
                     )
                     .frame(width: 120, height: 168)
                 }

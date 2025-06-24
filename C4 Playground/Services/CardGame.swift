@@ -19,10 +19,6 @@ class CardGame: NSObject, ObservableObject {
     @Published var discardPile: [Card] = []
     @Published var maxTally = 21
     
-//  TBD: Timer Logic
-//    @Published var isTimeKeeper = false
-//    @Published var remainingTime = 60
-    
 //  Player-Related Gameplay Variables
     var players: [GKPlayer] = []
     @Published var whoseTurn: Int = 0

@@ -11,12 +11,11 @@ import GameKit
 //var countdownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
 struct GameView: View {
-    let isiPad: Bool = (UIDevice.current.userInterfaceIdiom == .pad);
-    let columns: Int = (UIDevice.current.userInterfaceIdiom == .pad) ? 5 : 3
-    let cardWidth: Double = (UIDevice.current.userInterfaceIdiom == .pad) ? 300.0 : 200.0
-    
     @State private var showDropArea = false
-    @State private var dropAreaSize: CGSize = .init(width: (UIDevice.current.userInterfaceIdiom == .pad) ? 400.0 : 300.0, height: (UIDevice.current.userInterfaceIdiom == .pad) ? 300.0 : 200.0)
+    @State private var dropAreaSize: CGSize = .init(width: isiPad ? 400.0 : 300.0, height: isiPad ? 300.0 : 200.0)
+
+    @State var dropAreaTopBound = CGPoint(x: 0, y: 0)
+    @State var positionLogged = false
     
     @ObservedObject var game: CardGame
     
@@ -30,46 +29,38 @@ struct GameView: View {
                         PlayersContainer(players: game.players, playerProfileImages: game.playerProfileImages, playerHands: game.playerHands, myIndex: game.localPlayerIndex)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
-                        Text("TALLY \n\(game.tally)\nLIMIT: \(game.maxTally)")
-                            .font(isiPad ? .title3 : .body)
-                            .bold()
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.red)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white)
-                                    .shadow(radius: 2)
-                            )
-                            .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - cardWidth * 1.15)
+                        GameTally(game: game)
+                            .position(x: dropAreaTopBound.x, y: dropAreaTopBound.y - 120)
                     }
                     .zIndex(.infinity)
                     
                     VStack {
                         Spacer()
                         
-                        discardPile
+                        DiscardPileView(game: game)
                             .padding(.top, isiPad ? 200 : 100)
-                        
-                        HStack {
-                            cardDeck
-                                .padding(.leading, 60)
-                            Spacer()
-                        }
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear
+                                        .onChange(of: geo.frame(in: .global), initial: true) { _, newFrame in
+                                            dropAreaTopBound = CGPoint(x: newFrame.midX, y: newFrame.midY)
+                                            positionLogged = true
+                                        }
+                                }
+                            )
                         
                         Spacer()
                         
                         if game.whoseTurn == game.localPlayerIndex {
-                            if isiPad {
-                                playerHand
-                                    .padding()
-                            } else {
-                                if game.playerHands[game.localPlayerIndex].count > 0 {
-                                    mobilePlayerHand
-                                        .padding()
-                                }
-                            }
+                            PlayerHandView(game: game)
+                                .padding(.bottom)
                         }
+                    }
+                    
+                    HStack {
+                        CardDeckView(game: game)
+                            .position(x: isiPad ? 150 : 75, y: UIScreen.main.bounds.midY + 100)
+                        Spacer()
                     }
                 }
                 //  When all players have received the deck, the game can start. This time we use the game.players variable because it is faster than checking the match variable again. However, this means we need to start from 1 because game.players includes the local player.
@@ -103,102 +94,8 @@ struct GameView: View {
         }
         .edgesIgnoringSafeArea(.all)
     }
-    
-    var cardDeck: some View {
-        let frameWidth = isiPad ? 100.0 : 60.0
-        let cardOffset = -0.75
-        return ZStack {
-            ForEach(0..<min(game.deck.count, 10), id: \.self) { index in
-                CardView(card: game.deck[index])
-                    .frame(minWidth: frameWidth, maxWidth: frameWidth)
-                    .offset(x: CGFloat(index) * cardOffset, y: CGFloat(index) * cardOffset)
-                    .zIndex(Double(-index))
-            }
-        }
-    }
-    
-    var playerHand: some View {
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), spacing: 10) {
-            ForEach(Array(game.playerHands[game.localPlayerIndex].enumerated()), id: \.element.id) { index, card in
-                CardView(card: card, onPlay: {game.playCard(playedCard: card, indexInHand: index)}, isFaceUp: true)
-                    .transition(.asymmetric(
-                        insertion: .scale.combined(with: .opacity),
-                        removal: .scale.combined(with: .opacity)
-                    ))
-            }
-        }
-    }
-    
-    var mobilePlayerHand: some View {
-        // Use binding or observed object to track changes in game.playerHands
-        let numCards = game.playerHands[game.localPlayerIndex].count
-        let smallerCardSize = cardWidth * 0.67
-        
-        return VStack(spacing: -90) {
-            // Bottom row (3 cards - appears visually on top)
-            HStack(spacing: -15) {
-                ForEach(0..<3, id: \.self) { index in
-                    let currentCard = game.playerHands[game.localPlayerIndex][index]
-                    CardView(card: currentCard, onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) }, isFaceUp: true)
-                        .frame(width: smallerCardSize)
-                        .zIndex(Double(index))
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                }
-            }
-            
-            // Top row (remaining cards - appears underneath)
-            HStack(spacing: -15) {
-                ForEach(3..<numCards, id: \.self) { index in
-                    let currentCard = game.playerHands[game.localPlayerIndex][index]
-                    CardView(card: currentCard, onPlay: { game.playCard(playedCard: currentCard, indexInHand: index) }, isFaceUp: true)
-                        .frame(width: smallerCardSize)
-                        .zIndex(Double(index))
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-    
-    var discardPile: some View {
-        return ZStack {
-            if game.whoseTurn == game.localPlayerIndex {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.blue, lineWidth: 2)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue.opacity(0.1)))
-                    .frame(width: dropAreaSize.width, height: dropAreaSize.height)
-                    .transition(.scale)
-            }
-            
-            ForEach(Array(game.discardPile.enumerated()), id: \.element.id) { (index, card) in
-                CardView(card: card, isFaceUp: true)
-                    .frame(width: cardWidth)
-                    .offset(
-                        x: card.discardOffset?.x ?? CGFloat(index) * 1.5,
-                        y: card.discardOffset?.y ?? CGFloat(index) * -1.5
-                    )
-                    .rotationEffect(.degrees(
-                        card.discardRotation ?? Double(index) * 5
-                    ))
-                    .zIndex(Double(index))
-                    .onAppear {
-                        if card.discardOffset == nil {
-                            game.setDiscardPosition(for: card.id, index: index)
-                        }
-                    }
-            }
-        }
-        .frame(width: dropAreaSize.width, height: dropAreaSize.height)
-    }
 }
 
-#if DEBUG
 struct GameView_Previews: PreviewProvider {
     static var previews: some View {
         let mockGame = MockCardGame()
@@ -281,4 +178,3 @@ class MockPlayer: GKPlayer {
         return _displayName
     }
 }
-#endif

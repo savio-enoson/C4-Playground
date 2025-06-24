@@ -22,10 +22,20 @@ struct C4_PlaygroundApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+    var mockCardGame = MockCardGame()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            GameView(game: mockCardGame)
+                .task {
+                    mockCardGame.setupMockGame()
+                    for index in 0..<Int(mockCardGame.players.count) {
+                        mockCardGame.mockPreviewDealCards(to: index, numOfCards: 4)
+                    }
+                    // Local player is always 2 for some reason
+                    mockCardGame.mockPreviewDealCards(to: 0, numOfCards: 1)
+                }
+//            ContentView()
         }
         .modelContainer(sharedModelContainer)
     }

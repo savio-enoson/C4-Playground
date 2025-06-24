@@ -16,9 +16,9 @@ struct PlayersContainer: View {
     let playerProfileImages: [Image]
     let playerHands: [[Card]]
     let myIndex: Int
+    let playerYoffset = -120.0
     
     var body: some View {
-        let edgePadding = 80.0
         let playerCount = players.count - 1
         let playersExcludingMe = Array(0...playerCount).filter({ $0 != myIndex})
         
@@ -28,12 +28,12 @@ struct PlayersContainer: View {
                 case 1:
                     ZStack {
                         otherPlayerHand(playerCards: playerHands[playersExcludingMe[0]], cardRotation: 0.0)
-                            .position(x: geometry.size.width / 2, y: edgePadding)
+                            .position(x: geometry.size.width / 2, y: 40)
                         
                         PlayerProfile(playerName: players[playersExcludingMe[0]].displayName,
                                       image: playerProfileImages[playersExcludingMe[0]],
                                       color: .blue)
-                            .position(x: geometry.size.width / 2, y: isiPad ? edgePadding : edgePadding * 1.25)
+                        .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                     }
                 case 2:
                     HStack {
@@ -42,7 +42,7 @@ struct PlayersContainer: View {
                             
                             PlayerProfile(playerName: players[playersExcludingMe[0]].displayName,
                                           image: playerProfileImages[playersExcludingMe[0]],
-                                          color: .red)
+                                          color: .red).offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
                         
                         Spacer()
@@ -52,19 +52,19 @@ struct PlayersContainer: View {
                             
                             PlayerProfile(playerName: players[playersExcludingMe[1]].displayName,
                                           image: playerProfileImages[playersExcludingMe[1]],
-                                          color: .green)
+                                          color: .green).offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                         }
                     }
                     .position(x: geometry.size.width/2, y: geometry.size.height/3)
                 case 3:
                     ZStack {
                         otherPlayerHand(playerCards: playerHands[playersExcludingMe[0]], cardRotation: 0.0)
-                            .position(x: geometry.size.width / 2, y: edgePadding)
+                            .position(x: geometry.size.width / 2, y: 40)
                         
                         PlayerProfile(playerName: players[playersExcludingMe[0]].displayName,
                                       image: playerProfileImages[playersExcludingMe[0]],
                                       color: .blue)
-                            .position(x: geometry.size.width / 2, y: isiPad ? edgePadding : edgePadding * 1.25)
+                        .position(x: geometry.size.width / 2, y: isiPad ? 50 : 75)
                         
                         HStack {
                             ZStack {
@@ -72,7 +72,7 @@ struct PlayersContainer: View {
                                 
                                 PlayerProfile(playerName: players[playersExcludingMe[1]].displayName,
                                               image: playerProfileImages[playersExcludingMe[1]],
-                                              color: .red)
+                                              color: .red).offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }
                             
                             Spacer()
@@ -82,7 +82,7 @@ struct PlayersContainer: View {
                                 
                                 PlayerProfile(playerName: players[playersExcludingMe[2]].displayName,
                                               image: playerProfileImages[playersExcludingMe[2]],
-                                              color: .green)
+                                              color: .green).offset(x: 0, y: isiPad ? playerYoffset * 1.5 : playerYoffset)
                             }
                         }
                         .position(x: geometry.size.width/2, y: geometry.size.height/3)
@@ -106,8 +106,9 @@ struct PlayersContainer: View {
             if cardRotation > 0.0 {
                 VStack(spacing: -100) {
                     ForEach(playerCards) { card in
-                        CardView(card: card, onPlay: {
-                            print("played \(card.imageName)")
+                        CardView(card: card,
+                         onPlay: {
+//                            print("played \(card.imageName)")
                         })
                         .frame(maxWidth: isiPad ? 100 : 60)
                         .rotationEffect(.degrees(cardRotation))
@@ -117,7 +118,7 @@ struct PlayersContainer: View {
                 HStack(spacing: -40) {
                     ForEach(playerCards) { card in
                         CardView(card: card, onPlay: {
-                            print("played \(card.imageName)")
+//                            print("played \(card.imageName)")
                         })
                         .frame(maxWidth: isiPad ? 100 : 60)
                         .rotationEffect(.degrees(cardRotation))

@@ -18,50 +18,56 @@ struct PlayerProfile: View {
     let profileRadius = 80.0
     
     var body: some View {
-        if isiPad {
-            HStack(spacing: 0) {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: profileRadius, height: profileRadius)
-                    .background(.primary)
-                
-                VStack {
-                    // Player name box
-                    Text(playerName)
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)  // Make it take all available width
-                        .padding(.vertical, 8)
-                        .padding(.leading, 12)
-                        .background(.black)
-                    
-                    Spacer()
-                    
-                    // Icon bar
-                    HStack(spacing: 12) {
-                        Text("🛜")
-                        
-                        Text("💀")
-                        
-                        Spacer()
-                    }
-                    .padding(.leading, 12)
-
-                    Spacer()
-                }
-                .frame(minHeight: profileRadius, maxHeight: .infinity)
-                .background(.gray)
-            }
-            .frame(width: 3 * profileRadius, height: profileRadius)
-        } else {
-            image
-                .resizable()
-                .scaledToFit()
-                .frame(width: profileRadius-30, height: profileRadius-30)
-                .background(.primary)
-                .clipShape(Circle())
-        }
+        image
+            .resizable()
+            .scaledToFit()
+            .frame(width: isiPad ? 100.0 : 50, height: isiPad ? 100.0 : 50)
+            .background(.primary)
+            .clipShape(Circle())
+//        if isiPad {
+//            HStack(spacing: 0) {
+//                image
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: profileRadius, height: profileRadius)
+//                    .background(.primary)
+//                
+//                VStack {
+//                    // Player name box
+//                    Text(playerName)
+//                        .font(.subheadline)
+//                        .foregroundColor(.white)
+//                        .frame(maxWidth: .infinity, alignment: .leading)  // Make it take all available width
+//                        .padding(.vertical, 8)
+//                        .padding(.leading, 12)
+//                        .background(.black)
+//                    
+//                    Spacer()
+//                    
+//                    // Icon bar
+//                    HStack(spacing: 12) {
+//                        Text("🛜")
+//                        
+//                        Text("💀")
+//                        
+//                        Spacer()
+//                    }
+//                    .padding(.leading, 12)
+//
+//                    Spacer()
+//                }
+//                .frame(minHeight: profileRadius, maxHeight: .infinity)
+//                .background(.gray)
+//            }
+//            .frame(width: 3 * profileRadius, height: profileRadius)
+//        } else {
+//            image
+//                .resizable()
+//                .scaledToFit()
+//                .frame(width: profileRadius-30, height: profileRadius-30)
+//                .background(.primary)
+//                .clipShape(Circle())
+//        }
     }
 }
 
