@@ -16,10 +16,16 @@ let cardWidth: Double = isiPad ? 300.0 : 200.0
 
 struct GameTally: View {
     @ObservedObject var game: CardGame
-    let values = Array(-21...21).reversed() // Reverse the array
+    let values = Array(-21...21).reversed()
     
-    // Haptic generator for feedback
+    // Animation state
+    @State private var displayedTally: Int = 0
+    @State private var targetTally: Int = 0
+    @State private var animationTask: Task<Void, Never>?
+    
+    // Feedback
     private let feedbackGenerator = UISelectionFeedbackGenerator()
+    private let stepDuration = 0.08 // Time between steps
     
     var body: some View {
         VStack(spacing: -10) {
@@ -30,35 +36,61 @@ struct GameTally: View {
             
             Spacer()
             
-            Picker("Value", selection: $game.tally) {
-                ForEach(values.indices, id: \.self) { index in
-                    Text("\(values[index])")
-                        .tag(values[index])
+            Picker("Value", selection: $displayedTally) {
+                ForEach(values, id: \.self) { value in
+                    Text("\(value)")
                         .font(.cTitle)
+                        .foregroundColor(.black)
                 }
             }
             .pickerStyle(WheelPickerStyle())
-            .disabled(true) // Disables user interaction
-            .onChange(of: game.tally) {
-                // Play haptic feedback and system sound
-                feedbackGenerator.selectionChanged()
-                
-                // Play system sound (optional)
-                AudioServicesPlaySystemSound(1104)
+            .disabled(true)
+            .onChange(of: game.tally) { _, newTarget in
+                animateToTarget(newTarget)
             }
-            // This overlay makes the picker non-interactive while still showing it
-            .overlay(
-                Color.clear
-                    .contentShape(Rectangle())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            )
         }
-        .frame(width: 100, height: 120)
+        .padding(.vertical, 5)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white)
-                .shadow(radius: 2)
+            Image("tally_box")
+                .resizable()
         )
+        .frame(width: 100, height: 130)
+        .onAppear {
+            displayedTally = game.tally
+            targetTally = game.tally
+        }
+    }
+    
+    private func animateToTarget(_ target: Int) {
+        animationTask?.cancel() // Cancel any ongoing animation
+        
+        let steps = target - displayedTally
+        guard steps != 0 else { return }
+        
+        feedbackGenerator.prepare()
+        
+        animationTask = Task {
+            let direction = steps > 0 ? 1 : -1
+            var stepsRemaining = abs(steps)
+            
+            while stepsRemaining > 0 && !Task.isCancelled {
+                // Update displayed value
+                displayedTally += direction
+                stepsRemaining -= 1
+                
+                // Play feedback for each step
+                feedbackGenerator.selectionChanged()
+                AudioServicesPlaySystemSound(1104)
+                
+                // Control animation speed
+                try? await Task.sleep(nanoseconds: UInt64(stepDuration * 1_500_000_000))
+            }
+            
+            // Ensure we land exactly on target
+            if !Task.isCancelled {
+                displayedTally = target
+            }
+        }
     }
 }
 
@@ -88,7 +120,7 @@ struct DiscardPileView: View {
             if game.whoseTurn == game.localPlayerIndex {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(Color.orange, lineWidth: 2)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.05)))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.15)))
                     .frame(width: dropAreaSize.width, height: dropAreaSize.height)
                     .transition(.scale)
             }
@@ -163,7 +195,7 @@ struct PlayerHandView: View {
         return VStack(spacing: -40) {
             if numCards >= 4 {
                 // Bottom row (3 cards - appears visually on top)
-                HStack(spacing: -15) {
+                HStack {
                     ForEach(0..<3, id: \.self) { index in
                         let currentCard = game.playerHands[game.localPlayerIndex][index]
                         CardView(
@@ -187,7 +219,7 @@ struct PlayerHandView: View {
                 }
                 
                 // Top row (remaining cards - appears underneath)
-                HStack(spacing: -15) {
+                HStack {
                     ForEach(3..<numCards, id: \.self) { index in
                         let currentCard = game.playerHands[game.localPlayerIndex][index]
                         CardView(

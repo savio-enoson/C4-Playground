@@ -56,12 +56,6 @@ extension CardGame: GKMatchDelegate {
             guard let playerIndex = gameData?.playerIndex else { return }
             guard let indexInHand = gameData?.indexInHand else { return }
             
-            // Apply adjustment if it's a limit change card
-            if playedCard.trumpType == .limitchange, let adjustment = gameData?.adjustment {
-                maxTally += adjustment
-                print("🎯 Received Limit Change. Bust limit adjusted by \(adjustment) to \(maxTally)")
-            }
-            
             // Play card from other player's hand
             playCard(playedCard: playedCard, indexInHand: indexInHand, targetPlayerIndex: gameData?.targetPlayerIndex, isMyCard: false)
             
@@ -108,38 +102,45 @@ extension CardGame: GKMatchDelegate {
             }
         }
         else if let message = gameData?.message {
-            switch message {
-            case "eliminate":
-                guard let playerIndex = gameData?.playerIndex else { return }
-                eliminatePlayer(playerIndex: playerIndex)
-            //  Only host will receive this. When a player sends the message, increment playersReady by 1. When the counter reaches the number of expected pings, the match can begin.
-            //  TODO: Double click the createDeck function and jump to definition.
-            case "ready":
-                if localPlayer == host {
-                    print("received ready message from \(player.displayName)")
-                    playersReady += 1
-                    print ("Player \(playersReady) dan \(match.players.count)")
-                    if playersReady == match.players.count {
-                        createDeck()
-                    }
+            // Message + Number = Adjust a gameplay var
+            if let adjustBy = gameData?.adjustBy {
+                switch message {
+                case "limitchange":
+                    changeLimit(amount: adjustBy)
+                default:
+                    print("not yet set")
                 }
-            //  Same as before, but this time the controller is in GameView
-            //  TODO: Go to GameView and look for the first onChangeOf 
-            case "receivedDeck":
-                if localPlayer == host {
-                    print("player \(player.displayName) has received the deck")
-                    playersReceivedDeck += 1
-                }
-            case "receivedReshuffledDeck":
-                playersReceivedReshuffleCMD += 1
                 
-            case "applyBanana":
-                if let target = gameData?.targetPlayerIndex {
-                    activeJinxEffects[target].append(JinxStatus(turnsRemaining: 2, effect: .banana))
-                    print("🍌 Banana effect applied to \(players[target].displayName)")
+            } else {
+            // Message Only = Updating some status
+                switch message {
+                case "eliminate":
+                    guard let playerIndex = gameData?.playerIndex else { return }
+                    eliminatePlayer(playerIndex: playerIndex)
+                //  Only host will receive this. When a player sends the message, increment playersReady by 1. When the counter reaches the number of expected pings, the match can begin.
+                //  TODO: Double click the createDeck function and jump to definition.
+                case "ready":
+                    if localPlayer == host {
+                        print("received ready message from \(player.displayName)")
+                        playersReady += 1
+                        print ("Player \(playersReady) dan \(match.players.count)")
+                        if playersReady == match.players.count {
+                            createDeck()
+                        }
+                    }
+                //  Same as before, but this time the controller is in GameView
+                //  TODO: Go to GameView and look for the first onChangeOf
+                case "receivedDeck":
+                    if localPlayer == host {
+                        print("player \(player.displayName) has received the deck")
+                        playersReceivedDeck += 1
+                    }
+                case "receivedReshuffledDeck":
+                    playersReceivedReshuffleCMD += 1
+                
+                default:
+                    return
                 }
-            default:
-                return
             }
         }
     }

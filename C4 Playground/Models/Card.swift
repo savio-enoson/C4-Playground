@@ -15,16 +15,13 @@ enum CardValue: String, CaseIterable, Codable {
     case subtract_4 = "-4"
     case subtract_5 = "-5"
     
-    // Chosen player has to play 2 cards
     case jinx_banana = "jinx_banana"
+    case jinx_dog = "jinx_dog"
+    case jinx_confusion = "jinx_confusion"
+    case jinx_hallucination = "jinx_hallucination"
     
-    // Current score changes to 0
     case trump_wipeout = "trump_wipeout"
-    
-    // Current score becomes 21 (regardless of max tally)
     case trump_maxout = "trump_maxout"
-    
-    // Bust limit randomly changes (between -2 or -1 or +1, +2)
     case trump_limitchange = "trump_limitchange"
 }
 
@@ -32,30 +29,11 @@ enum CardType: String, CaseIterable, Codable {
     case number, action
 }
 
-enum ActionCardType: String, CaseIterable, Codable {
-    case jinx, trump
-}
-
-// Status Effect Jokers that affect a player's hand or their gameplay experience.
-enum JinxType: String, Codable {
-    case dog, banana
-}
-
-// Jokers that affect the tally, rules or flow of the game.
-enum TrumpType: String, Codable {
-    case wipeout, maxout, limitchange
-}
-
 // MARK: - Card Model
 struct Card: Identifiable, Equatable, Codable {
     let id: UUID
     let cardType: CardType
-    
     var value: CardValue
-//    let suit: CardSuit  // To be removed when changing later
-    var actionCardType: ActionCardType? = nil   // Action card types (enum). Use switch case to trigger different effects later
-    var jinxType: JinxType? = nil
-    var trumpType: TrumpType? = nil
     
     // Variables to remember the card's offset and rotation inside the discard pile
     var discardOffset: CGPoint?
@@ -71,10 +49,6 @@ struct Card: Identifiable, Equatable, Codable {
         id: UUID = UUID(),
         cardType: CardType,
         value: CardValue,
-    //  suit: CardSuit,
-        actionCardType: ActionCardType? = nil,
-        jinxType: JinxType? = nil,
-        trumpType: TrumpType? = nil,
         isFaceUp: Bool = false,
         discardOffset: CGPoint? = nil,
         discardRotation: Double? = nil,
@@ -83,10 +57,6 @@ struct Card: Identifiable, Equatable, Codable {
         self.id = id
         self.cardType = cardType
         self.value = value
-//        self.suit = suit
-        self.actionCardType = actionCardType
-        self.jinxType = jinxType
-        self.trumpType = trumpType
         
         self.discardOffset = discardOffset
         self.discardRotation = discardRotation
@@ -102,4 +72,10 @@ struct Card: Identifiable, Equatable, Codable {
         )
         discardRotation = offsetScale * Double.random(in: -3...3)
     }
+}
+
+struct StatusEffect {
+    let type: CardValue
+    let duration: Int
+    let timeElapsed: Int? = 0
 }

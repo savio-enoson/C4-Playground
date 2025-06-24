@@ -44,13 +44,14 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            SpriteView(scene: {
-                let scene = MainMenuScene(size: UIScreen.main.bounds.size)
-                scene.scaleMode = .resizeFill
-                scene.cardGame = game
-                return scene
-            }())
-            .ignoresSafeArea()
+            MainMenuView(game: game)
+//            SpriteView(scene: {
+//                let scene = MainMenuScene(size: UIScreen.main.bounds.size)
+//                scene.scaleMode = .resizeFill
+//                scene.cardGame = game
+//                return scene
+//            }())
+//            .ignoresSafeArea()
 
             // If inGame becomes true, show the game
             if game.inGame {
@@ -59,6 +60,8 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            game.setupAudio()
+            game.setupHaptics()
             if !game.inGame {
                 game.authenticatePlayer()
             }

@@ -16,10 +16,9 @@ struct GameData: Codable {
     var targetPlayerIndex: Int?
     var numOfCards: Int?
     var listOfCards: [Card]?
+    var adjustBy: Int?
     
     var message: String?
-    // For adjusting the limit
-    var adjustment: Int?
 }
 
 extension CardGame {
@@ -49,8 +48,7 @@ extension CardGame {
         let gameData = GameData(
             playerIndex: self.localPlayerIndex,
             playedCard: playedCard,
-            indexInHand: indexInHand,
-            adjustment: adjustment
+            indexInHand: indexInHand
         )
         return encode(gameData: gameData)
     }
@@ -61,9 +59,9 @@ extension CardGame {
         return encode(gameData: gameData)
     }
     
-    // Sending a message with targetPlayerIndex (for Jinx targeting like Banana)
-    func encode(message: String, targetPlayerIndex: Int) -> Data? {
-        let gameData = GameData(playerIndex: self.localPlayerIndex, targetPlayerIndex: targetPlayerIndex, message: message)
+    // Sending a message with a number attached
+    func encode(message: String, adjustBy: Int) -> Data? {
+        let gameData = GameData(playerIndex: self.localPlayerIndex, adjustBy: adjustBy, message: message)
         return encode(gameData: gameData)
     }
     

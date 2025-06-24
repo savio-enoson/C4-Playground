@@ -26,41 +26,36 @@ struct GameView: View {
             if game.inGame {
                 ZStack {
                     ZStack {
-                        PlayersContainer(players: game.players, playerProfileImages: game.playerProfileImages, playerHands: game.playerHands, myIndex: game.localPlayerIndex)
+                        PlayersContainer(game: game)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
                         GameTally(game: game)
-                            .position(x: dropAreaTopBound.x, y: dropAreaTopBound.y - 120)
+                            .position(x: dropAreaTopBound.x, y: dropAreaTopBound.y - 200)
                     }
                     .zIndex(.infinity)
                     
-                    VStack {
-                        Spacer()
-                        
-                        DiscardPileView(game: game)
-                            .padding(.top, isiPad ? 200 : 100)
-                            .background(
-                                GeometryReader { geo in
-                                    Color.clear
-                                        .onChange(of: geo.frame(in: .global), initial: true) { _, newFrame in
-                                            dropAreaTopBound = CGPoint(x: newFrame.midX, y: newFrame.midY)
-                                            positionLogged = true
-                                        }
-                                }
-                            )
-                        
-                        Spacer()
-                        
-                        if game.whoseTurn == game.localPlayerIndex {
-                            PlayerHandView(game: game)
-                                .padding(.bottom)
-                        }
-                    }
+                    DiscardPileView(game: game)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear
+                                    .onChange(of: geo.frame(in: .global), initial: true) { _, newFrame in
+                                        dropAreaTopBound = CGPoint(x: newFrame.midX, y: newFrame.midY)
+                                        positionLogged = true
+                                    }
+                            }
+                        )
+                        .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY)
                     
                     HStack {
                         CardDeckView(game: game)
-                            .position(x: isiPad ? 150 : 75, y: UIScreen.main.bounds.midY + 100)
+                            .position(x: isiPad ? 120 : 60, y: UIScreen.main.bounds.midY + 100)
                         Spacer()
+                    }
+                    
+                    if game.whoseTurn == game.localPlayerIndex {
+                        PlayerHandView(game: game)
+                            .frame(maxWidth: .infinity)
+                            .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.maxY - 150)
                     }
                 }
                 //  When all players have received the deck, the game can start. This time we use the game.players variable because it is faster than checking the match variable again. However, this means we need to start from 1 because game.players includes the local player.
@@ -100,6 +95,8 @@ struct GameView_Previews: PreviewProvider {
     static var previews: some View {
         let mockGame = MockCardGame()
         mockGame.setupMockGame()
+        mockGame.setupAudio()
+        mockGame.setupHaptics()
         
         return GameView(game: mockGame).task {
             for index in 0..<Int(mockGame.players.count) {
@@ -118,17 +115,32 @@ class MockCardGame: CardGame {
         deck = []
 
         let subtractCards: [Card] = CardValue.allCases
-            .filter { $0.rawValue.starts(with: "-") }
+            .filter {
+                $0.rawValue.starts(with: "-") &&
+                !$0.rawValue.starts(with: "jinx") &&
+                !$0.rawValue.starts(with: "trump")
+            }
             .flatMap { value in
                 (0..<6).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
         let addCards: [Card] = CardValue.allCases
-            .filter { !$0.rawValue.starts(with: "-") }
+            .filter {
+                !$0.rawValue.starts(with: "-") &&
+                !$0.rawValue.starts(with: "jinx") &&
+                !$0.rawValue.starts(with: "trump")
+            }
             .flatMap { value in
                 (0..<10).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
+        let trumpCards: [Card] = CardValue.allCases
+            .filter { $0.rawValue.starts(with: "trump") }
+            .flatMap { value in
+                (0..<2).map { _ in Card(cardType: .action, value: value) }
+            }
+        
+        deck.append(contentsOf: trumpCards)
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
         deck.shuffle()

@@ -28,24 +28,12 @@ class CardGame: NSObject, ObservableObject {
     var hasPlayed = false
     var localPlayerWon = false
     var playersReady = 0
+    
     @Published var playersReceivedDeck = 1
     @Published var playersReceivedReshuffleCMD = 1
     
 //  Action Cards Variables
-    // Jinx Cards
-    struct JinxStatus: Codable {
-        var turnsRemaining: Int
-        var effect: JinxType
-        
-        enum EffectType: Codable {
-            case banana
-        }
-    }
-    
-    @Published var activeJinxEffects: [[JinxStatus]] = []
-    
-    // Banana: force a player to play two cards
-    var cardsPlayedThisTurn = 0
+    @Published var activeJinxEffects: [[StatusEffect]] = []
     
 //  GK Variables
     var match: GKMatch?
@@ -66,77 +54,47 @@ class CardGame: NSObject, ObservableObject {
         deck = []
         
         let subtractCards: [Card] = CardValue.allCases
-            .filter { $0.rawValue.starts(with: "-") }
+            .filter {
+                $0.rawValue.starts(with: "-") &&
+                !$0.rawValue.starts(with: "jinx") &&
+                !$0.rawValue.starts(with: "trump")
+            }
             .flatMap { value in
                 (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
+        //
         let addCards: [Card] = CardValue.allCases
             .filter {
                 !$0.rawValue.starts(with: "-") &&
-                !$0.rawValue.starts(with: "trump_") &&
-                !$0.rawValue.starts(with: "jinx_") &&
-                Int($0.rawValue) != nil
+                !$0.rawValue.starts(with: "jinx") &&
+                !$0.rawValue.starts(with: "trump")
             }
             .flatMap { value in
                 (0..<5).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
-        let jinxCards: [Card] = (0..<5).map { _ in
-            Card(
-                cardType: .action,
-                value: .jinx_banana,
-                actionCardType: .jinx,
-                jinxType: .banana
-            )
-        }
-        
-        let trumpCards: [Card] = [
-            (0..<4).map { _ in
-                Card(
-                    cardType: .action,
-                    value: .trump_wipeout,
-                    actionCardType: .trump,
-                    trumpType: .wipeout
-                )
-                
-            },
-            (0..<4).map { _ in
-                Card(
-                    cardType: .action,
-                    value: .trump_maxout,
-                    actionCardType: .trump,
-                    trumpType: .maxout
-                )
-                
-            },
-            (0..<4).map { _ in
-                Card(
-                    cardType: .action,
-                    value: .trump_limitchange,
-                    actionCardType: .trump,
-                    trumpType: .limitchange
-                )
-                
+        // Total 3
+        let jinxCards: [Card] = CardValue.allCases
+            .filter {
+                $0.rawValue.starts(with: "jinx")
             }
-        ].flatMap { $0 }
+            .flatMap { value in
+                (0..<3).map { _ in Card(cardType: .action, value: value) } // New card each time
+            }
         
+        // 2 of each
+        let trumpCards: [Card] = CardValue.allCases
+            .filter { $0.rawValue.starts(with: "trump") }
+            .flatMap { value in
+                (0..<2).map { _ in Card(cardType: .action, value: value) }
+            }
+        
+        
+        deck.append(contentsOf: trumpCards)
         deck.append(contentsOf: subtractCards)
         deck.append(contentsOf: addCards)
-        deck.append(contentsOf: jinxCards)
-        deck.append(contentsOf: trumpCards)
         deck.shuffle()
-        
-        print("Deck contains \(deck.count) cards with IDs:", deck.map { $0.id.uuidString.prefix(4) })
-        debugTrumpCards()
-        func debugTrumpCards() {
-            let trumpCards = deck.filter { $0.actionCardType == .trump }
-            print("=== TRUMP CARDS ===")
-            for card in trumpCards {
-                print("Card: \(card.value.rawValue)")
-                print("Type: \(card.cardType), ActionType: \(card.actionCardType!), TrumpType: \(card.trumpType!)")
-            }
-        }
         
         // Send shuffled deck to sync between all players
         do {
@@ -168,15 +126,10 @@ class CardGame: NSObject, ObservableObject {
         
         // Action Cards
         activeJinxEffects = []
-        cardsPlayedThisTurn = 0
         
         // GK Variables
         match?.disconnect()
         match?.delegate = nil
-        // Karyna - :(( Found a bug with the restart the game
-//        match = nil
-//        host = GKPlayer()
-//        localPlayerIndex = 0
     }
     
     func setDiscardPosition(for cardId: UUID, index: Int) {
@@ -263,6 +216,14 @@ class CardGame: NSObject, ObservableObject {
         return players.filter { $0.gamePlayerID != excludedPlayer.gamePlayerID }
     }
     
+    private func setupPlayer(player: GKPlayer, index: Int) {
+        players.append(player)
+        loadAvatar(for: player, at: index)
+        playerHands.append([])
+        playerIsEliminated.append(false)
+        activeJinxEffects.append([])
+    }
+    
     
     //  Sets up base variables for the game. resetGame is called here to reset variables before another game begins (garbage collection). Then, load data for each player. The game does not start until all players have completed this process. When done, they will send a data packet to the host to indicate that their game room is setup.
     //  TODO: Go to CardGame+GKMatchDelegate and look at the receiveData function.
@@ -271,32 +232,23 @@ class CardGame: NSObject, ObservableObject {
         
         inGame = true
         match = newMatch
-        
         match!.delegate = self
         
         let allPlayers = [GKLocalPlayer.local] + match!.players
         let allExceptHost = playersExcluding(players: allPlayers, excludedPlayer: host).sorted { $0.gamePlayerID < $1.gamePlayerID }
         
         var counter = 1
-        players.append(host)
         playerProfileImages = Array(repeating: Image(systemName: "person.crop.circle.fill"), count: allPlayers.count)
-        loadAvatar(for: host, at: 0)
-        playerHands.append([])
-        playerIsEliminated.append(false)
+        setupPlayer(player: host, index: 0)
         
         for player in allExceptHost {
             if player == localPlayer {
                 localPlayerIndex = counter
             }
             
-            players.append(player)
-            loadAvatar(for: player, at: counter)
-            playerHands.append([])
-            playerIsEliminated.append(false)
+            setupPlayer(player: player, index: counter)
             counter += 1
         }
-        
-        activeJinxEffects = Array(repeating: [], count: players.count)
         
         if localPlayer != host {
             // Tell host player is ready
@@ -317,6 +269,13 @@ class CardGame: NSObject, ObservableObject {
         }
         
         dealCards(to: whoseTurn, numOfCards: 1)
+    }
+    
+    func changeLimit(amount: Int) {
+        if (maxTally + amount) < tally {
+            tally = maxTally + amount
+        }
+        maxTally += amount
     }
     
     //  When the local player selects a card, it will play it (do some calculations) on the local device first, and then tell everyone to to the same.
@@ -341,57 +300,39 @@ class CardGame: NSObject, ObservableObject {
                 print("Current Card Value: \(playedCard.value.rawValue)")
                 tally += Int(playedCard.value.rawValue) ?? 0
             }
-            
+
         case .action:
-            if let jinx = playedCard.jinxType {
+            switch playedCard.value {
+            case .jinx_dog:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_dog, duration: 100))
+            case .jinx_banana:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_banana, duration: 1))
+            case .jinx_confusion:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_confusion, duration: 3))
+            case .jinx_hallucination:
+                activeJinxEffects[targetPlayerIndex!].append(StatusEffect(type: .jinx_hallucination, duration: 3))
+            case .trump_wipeout:
+                tally = 0
+            case .trump_maxout:
+                tally = 21
+            case .trump_limitchange:
+                let changeBy = Int.random(in: -3...3)
+                changeLimit(amount: changeBy)
                 
-                // Getting the target player to receive effect
-                let targetIndex = targetPlayerIndex ?? ((whoseTurn + 1) % players.count)
-
-                switch jinx {
-                case .banana:
-                    activeJinxEffects[targetIndex].append(
-                        JinxStatus(turnsRemaining: 2, effect: .banana)
-                    )
-                    print("Banana played on \(players[targetIndex].displayName)")
-                    
-                    // Broadcast banana effect to all players
-                    do {
-                        let data = encode(message: "applyBanana", targetPlayerIndex: targetIndex)
-                        try match?.sendData(toAllPlayers: data!, with: .reliable)
-                    } catch {
-                        print("❌ Failed to send banana effect:", error.localizedDescription)
-                    }
-
-                case .dog:
-                    print("Dog")
+                // Change limit for every player
+                do {
+                    let data = encode(message: "changeLimit", adjustBy: changeBy)
+                    try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+                } catch {
+                    print("Error: \(error.localizedDescription).")
                 }
-            }
-            
-            if let trump = playedCard.trumpType {
-                switch trump {
-                case .wipeout:
-                    tally = 0
-                    print("-- Wipeout Played. Current Score changed to 0")
-                case .maxout:
-                    tally = 21
-                    print("++ Maxout Played. Current Score changed to 21")
-                case .limitchange:
-                    let options = [-2, -1, 1, 2]
-                    let adjustment = options.randomElement() ?? 0
-                    maxTally += adjustment
-                    print("🎯 Limit Change Played. Bust limit is now \(maxTally) (adjusted by \(adjustment))")
-                    do {
-                        let data = encode(playedCard: playedCard, indexInHand: indexInHand, adjustment: adjustment)
-                        try match?.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
-                    } catch {
-                        print("Error: \(error.localizedDescription).")
-                    }
-                }
+            default:
+                print("action card logic not registered.")
             }
         }
         
         discardPile.append(playedCard)
+        playCardSound()
         
         // If local player is playing the card
         if isMyCard {
@@ -411,26 +352,9 @@ class CardGame: NSObject, ObservableObject {
                 finishTurn()
             }
         } else {
-            // Only advances turn if not under Banana
-//            let remoteBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
-//            if !remoteBananas.isEmpty {
-//                if cardsPlayedThisTurn < 1 {
-//                    // First card played under banana - don't advance turn
-//                    cardsPlayedThisTurn += 1
-//                    print("🍌 Remote: Player still under Banana, play another card")
-//                    return
-//                } else {
-//                    // Second card played - clear banana effect
-//                    cardsPlayedThisTurn = 0
-//                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
-//                }
-//            }
-            
-            whoseTurn = (whoseTurn + 1) % players.count
+            advanceTurn()
             hasPlayed = false
         }
-        playCardSound()
-        playCardHaptic()
     }
    
     //  All gameplay logic functions roughly goes like this. Do the action on the local player's view, and then ping (send a data packet) indicating what action to perform to all other players. Set up the listener to do the same logic (in some cases call the same function with exceptions). In this instance, we deal the cards and then tell everyone else to do the same.
@@ -470,38 +394,14 @@ class CardGame: NSObject, ObservableObject {
     
     //  Every time a player finishes playing a card, game checks if tally has gone over the limit. If true, send the death flag to all other players. If not, then pass the turn to the next player.
     func finishTurn() {
-        
         // Bust check :P
         if tally > maxTally {
             playerIsEliminated[whoseTurn] = true
-        } else {
-            // Check if player is under Banana effect
-            let activeBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
-            if !activeBananas.isEmpty {
-                cardsPlayedThisTurn += 1
-                if cardsPlayedThisTurn < 2 {
-                    hasPlayed = false
-                    dealCards(to: whoseTurn, numOfCards: 1)
-                    print("🍌 Still under Banana: play one more card!")
-                    return // ⬅️ Turn stays with same player
-                } else {
-                    // Clear banana effect after playing 2 cards
-                    cardsPlayedThisTurn = 0
-                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
-                }
-            }
-            
-            // Reduce duration of all active Jinx effects
-            activeJinxEffects[whoseTurn] = activeJinxEffects[whoseTurn].compactMap { status in
-                var updated = status
-                updated.turnsRemaining -= 1
-                return updated.turnsRemaining > 0 ? updated : nil
-            }
         }
         
         // If busted, tell everyone
         if playerIsEliminated[whoseTurn], localPlayerIndex == whoseTurn {
-            whoseTurn = (whoseTurn + 1) % players.count
+            advanceTurn()
             dealCards(to: whoseTurn, numOfCards: 1)
             
             do {
@@ -514,7 +414,7 @@ class CardGame: NSObject, ObservableObject {
             return
         }
         
-        whoseTurn = (whoseTurn + 1) % players.count
+        advanceTurn()
         dealCards(to: whoseTurn, numOfCards: 1)
     }
     
@@ -527,10 +427,6 @@ class CardGame: NSObject, ObservableObject {
         }
         
         tally = maxTally
-        players.remove(at: playerIndex)
-        playerHands.remove(at: playerIndex)
-        playerProfileImages.remove(at: playerIndex)
-        playerIsEliminated.remove(at: playerIndex)
         
         if playerIndex < localPlayerIndex {
             localPlayerIndex -= 1
@@ -541,7 +437,10 @@ class CardGame: NSObject, ObservableObject {
         }
     }
     
-    func checkForWinner() {
-        
+    private func advanceTurn(){
+        whoseTurn = (whoseTurn + 1) % players.count
+        if playerIsEliminated[whoseTurn] {
+            advanceTurn()
+        }
     }
 }

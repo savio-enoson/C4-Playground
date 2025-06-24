@@ -12,7 +12,7 @@ import CoreHaptics
 
 extension CardGame {
     func setupAudio() {
-        guard let soundURL = Bundle.main.url(forResource: "play_card", withExtension: "mp3") else {
+        guard let soundURL = Bundle.main.url(forResource: "play_card", withExtension: "wav") else {
             print("Error: Couldn't find play_card.caf")
             return
         }
