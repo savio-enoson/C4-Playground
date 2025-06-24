@@ -48,6 +48,12 @@ extension CardGame: GKMatchDelegate {
             guard let playerIndex = gameData?.playerIndex else { return }
             guard let indexInHand = gameData?.indexInHand else { return }
             
+            // Apply adjustment if it's a limit change card
+            if playedCard.trumpType == .limitchange, let adjustment = gameData?.adjustment {
+                maxTally += adjustment
+                print("🎯 Received Limit Change. Bust limit adjusted by \(adjustment) to \(maxTally)")
+            }
+            
             // Play card from other player's hand
             playCard(playedCard: playedCard, indexInHand: indexInHand, targetPlayerIndex: gameData?.targetPlayerIndex, isMyCard: false)
             

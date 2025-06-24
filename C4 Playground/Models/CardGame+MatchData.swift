@@ -18,6 +18,8 @@ struct GameData: Codable {
     var listOfCards: [Card]?
     
     var message: String?
+    // For adjusting the limit
+    var adjustment: Int?
 }
 
 extension CardGame {
@@ -39,6 +41,17 @@ extension CardGame {
     // Playing an action card
     func encode(playedCard: Card, targetPlayerIndex: Int) -> Data? {
         let gameData = GameData(playerIndex: self.localPlayerIndex, playedCard: playedCard, targetPlayerIndex: targetPlayerIndex)
+        return encode(gameData: gameData)
+    }
+    
+    // Modify the encode function to include adjustment
+    func encode(playedCard: Card, indexInHand: Int, adjustment: Int? = nil) -> Data? {
+        let gameData = GameData(
+            playerIndex: self.localPlayerIndex,
+            playedCard: playedCard,
+            indexInHand: indexInHand,
+            adjustment: adjustment
+        )
         return encode(gameData: gameData)
     }
     
