@@ -20,5 +20,22 @@
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "10B6632D-98EA-4CAF-B5EC-AD7305CB8028"
+            shouldBeEnabled = "No"
+            nameForDebugger = "DisplaySetup"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "C4 Playground/Views/MainMenuScene.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "45"
+            endingLineNumber = "45"
+            landmarkName = "MainMenuScene"
+            landmarkType = "3">
+         </BreakpointContent>
+      </BreakpointProxy>
    </Breakpoints>
 </Bucket>
