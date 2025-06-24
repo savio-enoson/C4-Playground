@@ -7,6 +7,7 @@
 import GameKit
 import Foundation
 import SwiftUI
+import SpriteKit
 
 //  SUMMARY FOR GAVIN AND KARYNA
 //  It goes like this:
@@ -18,22 +19,50 @@ import SwiftUI
 //  Set up a case in MatchDelegate's receiveData function to handle the incoming data.
 
 
+//struct ContentView: View {
+//    @StateObject var game = CardGame()
+//    
+//    var body: some View {
+//        MainMenuView(game: game)
+//        .onAppear {
+//            if !game.inGame {
+//                game.authenticatePlayer()
+//            }
+//        }
+//        .fullScreenCover(isPresented: $game.inGame) {
+//            GameView(game: game)
+//        }
+//    }
+//}
+//
+#Preview {
+    ContentView()
+}
+
 struct ContentView: View {
     @StateObject var game = CardGame()
     
     var body: some View {
-        MainMenuView(game: game)
+        ZStack {
+            SpriteView(scene: {
+                let scene = MainMenuScene(size: UIScreen.main.bounds.size)
+                scene.scaleMode = .resizeFill
+                scene.cardGame = game
+                return scene
+            }())
+            .ignoresSafeArea()
+
+            // If inGame becomes true, show the game
+            if game.inGame {
+                GameView(game: game)
+                    .transition(.move(edge: .bottom))
+            }
+        }
         .onAppear {
             if !game.inGame {
                 game.authenticatePlayer()
             }
         }
-        .fullScreenCover(isPresented: $game.inGame) {
-            GameView(game: game)
-        }
     }
 }
 
-#Preview {
-    ContentView()
-}

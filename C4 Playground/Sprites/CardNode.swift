@@ -16,7 +16,7 @@ class CardNode: SKSpriteNode {
         fitToWidth: CGFloat? = nil,
         fitToHeight: CGFloat? = nil,
         preserveOriginalSize: Bool = false,
-        _ isFaceUp: Bool = true
+        isFaceUp: Bool = true
     ) {
         self.card = card
         self.isFaceUp = isFaceUp
@@ -82,7 +82,7 @@ class CardPreviewScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        let cardNode = CardNode(card: card, fitToHeight: 150, isFaceUp)
+        let cardNode = CardNode(card: card, fitToHeight: 150, isFaceUp: isFaceUp)
         cardNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
         addChild(cardNode)
     }
