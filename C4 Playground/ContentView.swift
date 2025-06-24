@@ -23,6 +23,10 @@ struct ContentView: View {
     
     var body: some View {
         MainMenuView(game: game)
+        .task {
+            game.setupAudio()
+            game.setupHaptics()
+        }
         .onAppear {
             if !game.inGame {
                 game.authenticatePlayer()
