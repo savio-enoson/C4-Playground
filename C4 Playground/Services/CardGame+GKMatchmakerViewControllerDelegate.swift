@@ -43,8 +43,21 @@ extension CardGame: GKMatchmakerViewControllerDelegate {
     
     func matchmakerViewControllerWasCancelled(_ viewController: GKMatchmakerViewController) {
         viewController.dismiss(animated: true)
+
+        // Animate all played cards back
+        mainMenuScene?.restorePlayedCardsToHand()
+
+        // Also reset the single played card if needed
+        if let card = playedCardMainMenu, let originalPosition = playedCardOriginalPositionMainMenu {
+            let moveBack = SKAction.move(to: originalPosition, duration: 0.25)
+            moveBack.timingMode = .easeOut
+            card.run(moveBack)
+            playedCardMainMenu = nil
+            playedCardOriginalPositionMainMenu = nil
+        }
     }
-    
+
+
     func matchmakerViewController(_ viewController: GKMatchmakerViewController, didFailWithError error: any Error) {
         viewController.dismiss(animated: true)
         print("\n\nMatchmaker view controller fails with error: \(error.localizedDescription)")

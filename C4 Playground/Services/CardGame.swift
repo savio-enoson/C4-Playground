@@ -32,6 +32,12 @@ class CardGame: NSObject, ObservableObject {
     @Published var playersReceivedDeck = 1
     @Published var playersReceivedReshuffleCMD = 1
     
+    //    Main Menu Variables
+    var mainMenuScene: MainMenuScene?
+
+    var playedCardMainMenu: CardNode?
+    var playedCardOriginalPositionMainMenu: CGPoint?
+    
 //  Action Cards Variables
     @Published var activeJinxEffects: [[StatusEffect]] = []
     
