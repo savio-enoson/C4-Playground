@@ -10,13 +10,17 @@ import SwiftUI
 class CardNode: SKSpriteNode {
     let card: Card
     var isFaceUp: Bool = true
+    var isDragging: Bool = false
+    var inPlayArea: Bool = false
 
     init(
         card: Card,
         fitToWidth: CGFloat? = nil,
         fitToHeight: CGFloat? = nil,
         preserveOriginalSize: Bool = false,
-        isFaceUp: Bool = true
+        isFaceUp: Bool = true,
+        isDragging: Bool = false,
+        inPlayArea: Bool = false
     ) {
         self.card = card
         self.isFaceUp = isFaceUp
@@ -57,6 +61,22 @@ class CardNode: SKSpriteNode {
         ])
 
         self.run(flip)
+    }
+    
+    func dragging() {
+        self.isDragging = true
+    }
+    
+    func stopDragging() {
+        self.isDragging = false
+    }
+    
+    func inPlay() {
+        self.inPlayArea = true
+    }
+    
+    func outOfPlay() {
+        self.inPlayArea = false
     }
 
     required init?(coder aDecoder: NSCoder) {

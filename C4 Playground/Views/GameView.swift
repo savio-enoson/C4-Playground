@@ -98,15 +98,26 @@ struct GameView_Previews: PreviewProvider {
         mockGame.setupAudio()
         mockGame.setupHaptics()
         
-        return GameView(game: mockGame).task {
-            for index in 0..<Int(mockGame.players.count) {
-                mockGame.mockPreviewDealCards(to: index, numOfCards: 4)
+        return GameView(game: mockGame)
+            .task {
+                for index in 0..<mockGame.players.count {
+                    mockGame.mockPreviewDealCards(to: index, numOfCards: 4)
+                }
+                
+                // Loop turns forever (or until stopped manually)
+                while true {
+                    for turn in 0..<mockGame.players.count {
+                        await MainActor.run {
+                            mockGame.whoseTurn = turn
+                            mockGame.localPlayerIndex = turn // Simulate you're each player
+                        }
+                        try? await Task.sleep(nanoseconds: 7_000_000_000) // 2 seconds per turn
+                    }
+                }
             }
-            // Local player is always 2 for some reason
-            mockGame.mockPreviewDealCards(to: 0, numOfCards: 1)
-        }
     }
 }
+
 
 class MockCardGame: CardGame {
     func setupMockGame() {
