@@ -73,6 +73,8 @@ struct MainMenuView: View {
                     
                     Button {
                         print("Pressed How to Play")
+                        game.playCardSound()
+                        game.playCardHaptic()
                     } label: {
                         ZStack {
                             Image("pxlButtonBackground")

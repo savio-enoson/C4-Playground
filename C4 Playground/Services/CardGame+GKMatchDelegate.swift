@@ -44,6 +44,14 @@ extension CardGame: GKMatchDelegate {
 //        //      Event handlers
 //        //      Playing a card
         if let playedCard = gameData?.playedCard {
+//            switch playedCard.cardType {
+//            case .number:
+//                
+//            case .action:
+//                switch playedCard.actionCardType {
+//                    
+//                }
+//            }
             print("\(player.displayName) is playing a card.")
             guard let playerIndex = gameData?.playerIndex else { return }
             guard let indexInHand = gameData?.indexInHand else { return }

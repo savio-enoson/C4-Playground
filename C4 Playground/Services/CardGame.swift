@@ -7,6 +7,8 @@
 import Foundation
 import SwiftUI
 import GameKit
+import AVFoundation
+import CoreHaptics
 
 
 class CardGame: NSObject, ObservableObject {
@@ -54,6 +56,13 @@ class CardGame: NSObject, ObservableObject {
     var host = GKPlayer()
     var localPlayer = GKLocalPlayer.local
     var localPlayerIndex: Int = 0
+    
+    // Audio
+    var audioPlayer: AVAudioPlayer?
+    
+    // Haptics
+    var hapticEngine: CHHapticEngine?
+    var hapticPlayer: CHHapticPatternPlayer?
     
     //  Host will always call this function. This creates a deck, and sends it to all other players. Again, the match will not start properly until all players have received the deck. Check the receiveData's "receivedDeck" case for details.
     //  TODO: Check CardGame+GKMatchDelegate's "receivedDeck" case
@@ -319,9 +328,6 @@ class CardGame: NSObject, ObservableObject {
     //  This same function (well actually its the finishTurn function) then increments the turn to the next player's index. When other players receive the ping, the listener tells them to run this function (so as to not repeat the logic), but skip some logic and just increment the turn to the next player's.
     //  TODO: Go to finishTurn and reshuffleDeck functions.
     func playCard(playedCard: Card, indexInHand: Int, targetPlayerIndex: Int? = nil, isMyCard: Bool = true) {
-        print(">>> \(localPlayer.displayName) attempting to play card")
-        print("isMyCard: \(isMyCard), hasPlayed: \(hasPlayed), whoseTurn: \(whoseTurn), localPlayerIndex: \(localPlayerIndex)")
-
         // Prevent double inputs
         if isMyCard {
             if hasPlayed {
@@ -410,23 +416,25 @@ class CardGame: NSObject, ObservableObject {
             }
         } else {
             // Only advances turn if not under Banana
-            let remoteBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
-            if !remoteBananas.isEmpty {
-                if cardsPlayedThisTurn < 1 {
-                    // First card played under banana - don't advance turn
-                    cardsPlayedThisTurn += 1
-                    print("🍌 Remote: Player still under Banana, play another card")
-                    return
-                } else {
-                    // Second card played - clear banana effect
-                    cardsPlayedThisTurn = 0
-                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
-                }
-            }
+//            let remoteBananas = activeJinxEffects[whoseTurn].filter { $0.effect == .banana }
+//            if !remoteBananas.isEmpty {
+//                if cardsPlayedThisTurn < 1 {
+//                    // First card played under banana - don't advance turn
+//                    cardsPlayedThisTurn += 1
+//                    print("🍌 Remote: Player still under Banana, play another card")
+//                    return
+//                } else {
+//                    // Second card played - clear banana effect
+//                    cardsPlayedThisTurn = 0
+//                    activeJinxEffects[whoseTurn].removeAll { $0.effect == .banana }
+//                }
+//            }
             
             whoseTurn = (whoseTurn + 1) % players.count
             hasPlayed = false
         }
+        playCardSound()
+        playCardHaptic()
     }
    
     //  All gameplay logic functions roughly goes like this. Do the action on the local player's view, and then ping (send a data packet) indicating what action to perform to all other players. Set up the listener to do the same logic (in some cases call the same function with exceptions). In this instance, we deal the cards and then tell everyone else to do the same.

@@ -56,6 +56,7 @@ struct Card: Identifiable, Equatable, Codable {
     var actionCardType: ActionCardType? = nil   // Action card types (enum). Use switch case to trigger different effects later
     var jinxType: JinxType? = nil
     var trumpType: TrumpType? = nil
+    
     // Variables to remember the card's offset and rotation inside the discard pile
     var discardOffset: CGPoint?
     var discardRotation: Double?
