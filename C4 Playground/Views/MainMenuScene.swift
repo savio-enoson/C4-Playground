@@ -125,11 +125,28 @@ class MainMenuScene: SKScene {
 
         node.strokeColor = SKColor(red: 45/255, green: 111/255, blue: 80/255, alpha: 1)
         node.lineWidth = 4
-        node.zPosition = titleImage.zPosition - 100  // Behind the title
+        node.zPosition = titleImage.zPosition - 1000  // Behind the title
         node.name = "playArea"
 
         addChild(node)
         playAreaNode = node
+        
+        let promptLabel = SKLabelNode(text: "Drag a card here...")
+        promptLabel.fontName = "Jersey 10" // or your custom font name
+        promptLabel.fontSize = titleImage.frame.height * 0.2
+        promptLabel.fontColor = .white
+        promptLabel.position = CGPoint(x: size.width/2, y: size.height/2)
+        promptLabel.zPosition = node.zPosition + 1
+        promptLabel.alpha = 1.0 // Start invisible
+
+        // Fade in and out forever
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 1.0)
+        let fadeOut = SKAction.fadeAlpha(to: 0.0, duration: 1.0)
+        let pulse = SKAction.sequence([fadeIn, fadeOut])
+        let loopAnimation = SKAction.repeatForever(pulse)
+        promptLabel.run(loopAnimation)
+
+        node.addChild(promptLabel)
     }
     
     private func setupMenuCards(
