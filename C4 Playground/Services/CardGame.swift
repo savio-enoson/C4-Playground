@@ -411,10 +411,15 @@ class CardGame: NSObject, ObservableObject {
         cardsToReshuffle.removeAll { card in
                 card.value.rawValue.starts(with: "jinx")
             }
+        let jinxCardsInReshuffle = cardsToReshuffle.filter { card in
+            card.value.rawValue.starts(with: "jinx")
+        }
+        
         let allJinxTypes = CardValue.allCases.filter {
                 $0.rawValue.starts(with: "jinx")
             }
-        let newJinxCards: [Card] = Array(allJinxTypes.shuffled().prefix(allJinxTypes.count)).map { value in
+        
+        let newJinxCards: [Card] = Array(allJinxTypes.shuffled().prefix(jinxCardsInReshuffle.count)).map { value in
                 Card(cardType: .action, value: value)
             }
         cardsToReshuffle.append(contentsOf: newJinxCards)

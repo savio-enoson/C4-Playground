@@ -35,14 +35,7 @@ struct C4_PlaygroundApp: App {
 //                    // Local player is always 2 for some reason
 //                    mockCardGame.mockPreviewDealCards(to: 0, numOfCards: 1)
 //                }
-//            ContentView()
-            BustedAlertView(playerName: "Gay") {
-                // Just for preview – nothing needed here
-            }
-            
-            WinnerAlertView(playerName: "Straight"){
-                
-            }
+            ContentView()
         }
         .modelContainer(sharedModelContainer)
     }

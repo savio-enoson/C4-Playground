@@ -29,6 +29,11 @@ struct GameView: View {
             if game.inGame {
                 ZStack {
                     ZStack {
+                        Text("Max. Tally: \(game.maxTally)")
+                            .font(.cBody)
+                            .foregroundColor(.white)
+                            .position(x: UIScreen.main.bounds.maxX - 60, y: 40)
+                        
                         PlayersContainer(game: game)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
