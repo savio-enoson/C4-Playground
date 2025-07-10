@@ -94,7 +94,7 @@ struct GameView: View {
                 })
                 .onChange(of: game.playersReceivedReshuffleCMD, {
                     if game.playersReceivedReshuffleCMD == game.players.count, game.host == GKLocalPlayer.local {
-                        game.finishTurn()
+//                        game.finishTurn()
                         game.playersReceivedReshuffleCMD = 1
                     }
                 })

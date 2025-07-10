@@ -82,3 +82,27 @@ func emoji(for effectType: CardValue) -> String {
         return "" // Return an empty string for any other unhandled cases
     }
 }
+
+
+func findMostFrequent(in numbers: [Int]) -> Int? {
+    // Return nil if the array is empty
+    guard !numbers.isEmpty else {
+        return nil
+    }
+
+    // 1. Create a frequency dictionary
+    // Example: [1, 2, 2, 3] -> [1: 1, 2: 2, 3: 1]
+    var counts: [Int: Int] = [:]
+    for number in numbers {
+        counts[number, default: 0] += 1
+    }
+
+    // 2. Find the key-value pair with the highest value (count)
+    // The 'max(by:)' method finds the element in a sequence that has the
+    // maximum value based on the provided closure.
+    if let (mostFrequentNumber, _) = counts.max(by: { $0.value < $1.value }) {
+        return mostFrequentNumber
+    }
+
+    return nil // Should not happen if the array is not empty
+}

@@ -105,8 +105,32 @@ extension CardGame: GKMatchDelegate {
             // Message + Number = Adjust a gameplay var
             if let adjustBy = gameData?.adjustBy {
                 switch message {
+                case "updateTurn":
+                    whoseTurn = adjustBy
                 case "changeLimit":
                     changeLimit(amount: adjustBy)
+                case "checkTurn":
+                    let alivePlayerCount = playerIsEliminated.filter { $0 == false }.count
+                    playersConfirmedTurn += 1
+                    receivedWhoseTurnValues.append(adjustBy)
+                    if playersConfirmedTurn == alivePlayerCount {
+                        receivedWhoseTurnValues.append(whoseTurn)
+                        let uniqueValues = Set(receivedWhoseTurnValues).count
+                        if uniqueValues > 1 {
+                            let confirmedTurn = findMostFrequent(in: receivedWhoseTurnValues)
+                            whoseTurn = confirmedTurn!
+                            
+                            do {
+                                let data = encode(message: "updateTurn", adjustBy: confirmedTurn!)
+                                try match.sendData(toAllPlayers: data!, with: GKMatch.SendDataMode.reliable)
+                            } catch {
+                                print("Error: \(error.localizedDescription).")
+                            }
+                            
+                            playersConfirmedTurn = 0
+                            receivedWhoseTurnValues.removeAll()
+                        }
+                    }
                 default:
                     print("not yet set")
                 }

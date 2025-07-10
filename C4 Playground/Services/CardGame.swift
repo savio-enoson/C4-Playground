@@ -12,14 +12,14 @@ import CoreHaptics
 
 
 class CardGame: NSObject, ObservableObject {
-//  Gameplay Variables
+    //  Gameplay Variables
     @Published var inGame: Bool = false
     @Published var deck: [Card] = []
     @Published var tally: Int = 0
     @Published var discardPile: [Card] = []
     @Published var maxTally = 21
     
-//  Player-Related Gameplay Variables
+    //  Player-Related Gameplay Variables
     var players: [GKPlayer] = []
     @Published var whoseTurn: Int = 0
     @Published var playerHands: [[Card]] = []
@@ -31,6 +31,8 @@ class CardGame: NSObject, ObservableObject {
     
     @Published var playersReceivedDeck = 1
     @Published var playersReceivedReshuffleCMD = 1
+    var playersConfirmedTurn = 0
+    var receivedWhoseTurnValues: [Int] = []
     
     //    Main Menu Variables
     var mainMenuScene: MainMenuScene?
@@ -38,10 +40,10 @@ class CardGame: NSObject, ObservableObject {
     var playedCardMainMenu: CardNode?
     var playedCardOriginalPositionMainMenu: CGPoint?
     
-//  Action Cards Variables
+    //  Action Cards Variables
     @Published var activeJinxEffects: [[StatusEffect]] = []
     
-//  GK Variables
+    //  GK Variables
     var match: GKMatch?
     var host = GKPlayer()
     var localPlayer = GKLocalPlayer.local
@@ -80,7 +82,7 @@ class CardGame: NSObject, ObservableObject {
                 !$0.rawValue.starts(with: "trump")
             }
             .flatMap { value in
-                (0..<3).map { _ in Card(cardType: .number, value: value) } // New card each time
+                (0..<5).map { _ in Card(cardType: .number, value: value) } // New card each time
             }
         
         // Get all available jinx card types
@@ -130,6 +132,8 @@ class CardGame: NSObject, ObservableObject {
         playerProfileImages.removeAll()
         activeJinxEffects.removeAll()
         activeJinxEffects.removeAll()
+        playersConfirmedTurn = 0
+        receivedWhoseTurnValues.removeAll()
         
         hasPlayed = false
         localPlayerWon = false
@@ -383,7 +387,7 @@ class CardGame: NSObject, ObservableObject {
             }
         }
         
-        finishTurn()
+        finishTurn(lastCardPlayed: playedCard)
     }
    
     //  All gameplay logic functions roughly goes like this. Do the action on the local player's view, and then ping (send a data packet) indicating what action to perform to all other players. Set up the listener to do the same logic (in some cases call the same function with exceptions). In this instance, we deal the cards and then tell everyone else to do the same.
@@ -439,20 +443,37 @@ class CardGame: NSObject, ObservableObject {
     }
     
     //  Every time a player finishes playing a card, game checks if tally has gone over the limit. If true, send the death flag to all other players. If not, then pass the turn to the next player.
-    func finishTurn() {
+    func finishTurn(lastCardPlayed: Card? = nil) {
         let myTurn = whoseTurn == localPlayerIndex
         
-        // Bust check :P
-        if tally > maxTally {
-            playerIsEliminated[whoseTurn] = true
+        if lastCardPlayed?.cardType == .action, myTurn {
+            print("skip checking for action cards")
+        } else {
+            // Bust check :P
+            if tally > maxTally {
+                playerIsEliminated[whoseTurn] = true
+            }
         }
         
         let myStatusEffects = activeJinxEffects[whoseTurn]
         let hasBanana = myStatusEffects.contains { $0.type == .jinx_banana }
         
+        let lastPlayerTurn = whoseTurn
         if !hasBanana {
             // Advance to next player
             whoseTurn = findNextPlayer()
+            
+            if lastPlayerTurn == whoseTurn {
+                // confirm whoseturn with host
+                if localPlayer != host {
+                    do {
+                        let data = encode(message: "checkTurn", adjustBy: whoseTurn)
+                        try match?.send(data!, to: [host], dataMode: GKMatch.SendDataMode.reliable)
+                    } catch {
+                        print("Error: \(error.localizedDescription).")
+                    }
+                }
+            }
         }
         
         // Check if all players are eliminated (except possibly current player)
